@@ -10,7 +10,7 @@ The easiest way to use all of this is to just build the binary in `cmds/degob` a
 
 Create a new `Decoder` over your reader using `NewDecoder` and then decode that into a slice of `Gob`s with `Decode` or stream `Gob`s with `DecodeStream`. `DecodeStream` isn't fully tested yet and will probably still fumble with errors. Once you have `Gob`s you can either play with the types directly or just print them out to a writer using the `WriteTypes` and `WriteValues` methods.
 
-The provided `degob` command provides a straightforward [sample usage](cmd/degob/main.go).
+The provided `degob` command provides a straightforward [sample usage](cmds/degob/main.go).
 
 ## TODO
 
