@@ -443,7 +443,6 @@ func (dec *Decoder) consumeNextUint(expected int) {
 	delta := int(dec.nextUint())
 	if delta != expected {
 		dec.err = dec.genError(fmt.Errorf("expected delta %d but got %d", expected, delta))
-		panic(dec.err)
 		return
 	}
 }

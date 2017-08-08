@@ -20,7 +20,7 @@ Usage of ./degob:
     	Truncate output file
 ```
 
-This should work on a ton of different inputs but since this isn't quite stable yet some things probably won't work.
+This should work on a lot of different and simple inputs but, since this isn't quite stable yet, some things probably won't work.
 
 ## TODO
 
@@ -31,3 +31,4 @@ This should work on a ton of different inputs but since this isn't quite stable 
 - A lot more testing
 - Documentation
 - Errors maybe could be handled better and I haven't tested if the byte count on error is correct or not yet
+- Figure out licensing; I heavily relied on the Go source for this tool
