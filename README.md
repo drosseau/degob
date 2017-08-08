@@ -155,4 +155,3 @@ map[string]Anon74_1da8c6d2{"key one": Anon74_1da8c6d2{Complex: (-2+3i), Float: 1
 - A lot more testing
 - Documentation
 - Errors maybe could be handled better and I haven't tested if the byte count on error is correct or not yet
-- Figure out licensing; I heavily relied on the Go source for this tool
