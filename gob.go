@@ -7,10 +7,11 @@ import (
 	"strings"
 )
 
-// Gob is a more concrete representation of a gob, but it is still lower level.
+// Gob is a more concrete representation of a gob. It has all of the found
+// types and the decoded value.
 type Gob struct {
 	Types map[typeId]*WireType
-	Value Value
+	Value
 }
 
 // WriteTypes writes the Gob's types to Writer

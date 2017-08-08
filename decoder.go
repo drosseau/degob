@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+// keep track of things we've named already so anonymous types don't get the
+// same name somehow
 var anonTypes map[string]struct{}
 
 func init() {
@@ -22,23 +24,27 @@ func init() {
 // (byteCount (-type id, encoding of a wireType)* (type id, encoding of a value))*
 
 const (
-	uintByteSize       = 8
+	// how many types are in a uint64
+	uintByteSize = 8
+	// typeIds for user defined types can't actually go below this
 	smallestUserTypeId = 64
 )
 
-// Decoder reads and decodes gobs into our `Gob` type.
+// Decoder reads and decodes gobs into our `Gob` type. A decoder can be
+// used to stream using DecodeStream or just decode a reader containing
+// any number of Gobs
 type Decoder struct {
-	r            io.Reader // The base reader
-	gobBuf       gobBuf    // Holds the current gob
-	buf          [9]byte   // a buffer for reading uints
-	seenTypes    map[typeId]*WireType
-	decodedValue Value
-	//values         map[typeId]*Value
+	r              io.Reader // The base reader
+	gobBuf         gobBuf    // Holds the current gob
+	buf            [9]byte   // a buffer for reading uints
+	seenTypes      map[typeId]*WireType
+	decodedValue   Value
 	bytesProcessed uint64
 
 	err *Error
 }
 
+// NewDecoder returns a ready to use decoder for the underlying Reader
 func NewDecoder(r io.Reader) *Decoder {
 	dec := new(Decoder)
 	dec.r = bufio.NewReader(r)
@@ -48,7 +54,7 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 // Decode reads all data on the input reader and decodes the Gobs returning
-// a slice of `Gob`s.
+// a slice of `Gob`s. This
 func (dec *Decoder) Decode() ([]*Gob, error) {
 	dec.bytesProcessed = 0
 	dec.clearGob()
@@ -394,7 +400,6 @@ func (dec *Decoder) readSliceValue(wire *WireType, val *Value) {
 	length := int(dec.nextUint())
 	into := dec.valueForWireType(wire).(*sliceValue)
 	into.values = make([]Value, length)
-	// TODO: should I set all of these to the default?
 	for i := 0; i < length; i++ {
 		dec.readValue(wire.SliceT.Elem, &into.values[i])
 	}
@@ -673,7 +678,7 @@ func (dec *Decoder) anonymousStructTypeName(w *WireType) string {
 	for {
 		followString = hex.EncodeToString(follow)
 		if _, ok := anonTypes[followString]; ok {
-			// that is annoying..
+			// this shouldn't happen much
 			_, _ = rand.Read(follow)
 		} else {
 			anonTypes[followString] = struct{}{}
@@ -681,17 +686,6 @@ func (dec *Decoder) anonymousStructTypeName(w *WireType) string {
 		}
 	}
 	s := fmt.Sprintf("Anon%d_%s", w.StructT.Id, followString)
-	/*
-		s := "struct {"
-		nfields := len(w.StructT.Field)
-		for l, f := range w.StructT.Field {
-			if l < nfields-1 {
-				s += fmt.Sprintf("%s %s; ", f.Name, dec.getName(typeId(f.Id)))
-			} else {
-				s += fmt.Sprintf("%s %s}", f.Name, dec.getName(typeId(f.Id)))
-			}
-		}
-	*/
 	w.StructT.CommonType.Name = s
 	return s
 }

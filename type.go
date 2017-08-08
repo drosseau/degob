@@ -1,5 +1,8 @@
 package degob
 
+// WireType is basically the same as the `encoding/gob` wiretype with a few
+// fields added and exported. It is also a `Stringer` so the types can be
+// printed for better viewing.
 type WireType struct {
 	ArrayT  *ArrayType
 	SliceT  *SliceType
@@ -7,16 +10,21 @@ type WireType struct {
 	MapT    *MapType
 }
 
+// ArrayType represents a fixed size array
 type ArrayType struct {
 	CommonType
 	Elem           typeId
 	ElemTypeString string
 	Len            int
 }
+
+// CommonType has information common to all base types
 type CommonType struct {
-	Name string // the name of the struct type
-	Id   int    // the id of the type, repeated so it's inside the type
+	Name string
+	Id   int
 }
+
+// SliceType represents a slice
 type SliceType struct {
 	CommonType
 	Elem           typeId
@@ -24,13 +32,17 @@ type SliceType struct {
 }
 type StructType struct {
 	CommonType
-	Field []*FieldType // the fields of the struct.
+	Field []*FieldType
 }
+
+// FieldType is the information for a struct field
 type FieldType struct {
-	Name       string // the name of the field.
+	Name       string
 	TypeString string
-	Id         int // the type id of the field, which must be already defined
+	Id         int
 }
+
+// MapType is the information for a map
 type MapType struct {
 	CommonType
 	Key            typeId
@@ -59,9 +71,12 @@ const (
 	_reserved7_id typeId = 15
 )
 
-// Value is any displayable value
+// Value is a reprsentation of a Go value. You can test for equality and
+// Display them stylized
 type Value interface {
+	// Equal tests for equality to another value
 	Equal(Value) bool
+	// Display shows the value accoring to the chosen style
 	Display(sty style) string
 }
 

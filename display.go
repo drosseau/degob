@@ -11,15 +11,13 @@ import (
 type style uint8
 
 const (
-	// CommentedPretty prints the values inside /* ... */ pretty printed
-	//CommentedPretty style = iota
-	// CommentedSingleLine prints values after // on a single line
-	CommentedSingleLine = iota
-	// Pretty prints values pretty uncommented
-	//Pretty
-	// SingleLine prints values in a single line
-	SingleLine
-	// JSON prints the values as JSON objects
+	// SingleLine tells the Value to format its display as a Go type on a single line
+	SingleLine = iota
+	// Commented single line adds a // before SingleLine output. This is useful if
+	// you'd like to stream Gobs to create a file of discovered types but don't
+	// want to ignore values
+	CommentedSingleLine
+	// JSON tells the Value to format its display as JSON
 	JSON
 )
 
@@ -178,8 +176,10 @@ func (s *structValue) singleLine() string {
 }
 
 func (s *structValue) json() string {
-	return "{}"
+	panic("not implemented")
 }
+
+// Base types
 
 func (v _bool_type) Display(sty style) string {
 	return fmt.Sprintf("%v", bool(v))
