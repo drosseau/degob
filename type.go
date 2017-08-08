@@ -160,7 +160,7 @@ func (v _bytes_type) Equal(o Value) bool {
 }
 
 func (v _bytes_type) Display(sty style) string {
-	return fmt.Sprintf("%v", []byte(v))
+	return fmt.Sprintf("%#v", []byte(v))
 }
 
 type _string_type string
@@ -188,7 +188,7 @@ func (v _complex_type) Equal(o Value) bool {
 }
 
 func (v _complex_type) Display(sty style) string {
-	return fmt.Sprintf("%v", complex128(v))
+	return fmt.Sprintf("%#v", complex128(v))
 }
 
 type _interface_type struct {
