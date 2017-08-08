@@ -18,7 +18,7 @@ const (
 	// want to ignore values
 	CommentedSingleLine
 	// JSON tells the Value to format its display as JSON
-	JSON
+	//JSON
 )
 
 func (w *WireType) String() string {
@@ -71,8 +71,8 @@ func (v sliceValue) valuesSep(sty style, sep string) string {
 
 func (v sliceValue) Display(sty style) string {
 	switch sty {
-	case JSON:
-		return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
+	//case JSON:
+	//	return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
 	case SingleLine:
 		return fmt.Sprintf("[]%s{%s}", v.elemType, v.valuesSep(SingleLine, ", "))
 	case CommentedSingleLine:
@@ -92,8 +92,8 @@ func (v arrayValue) valuesSep(sty style, sep string) string {
 
 func (v arrayValue) Display(sty style) string {
 	switch sty {
-	case JSON:
-		return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
+	//case JSON:
+	//return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
 	case SingleLine:
 		return fmt.Sprintf("[%d]%s{%s}", v.length, v.elemType, v.valuesSep(SingleLine, ", "))
 	case CommentedSingleLine:
@@ -138,8 +138,8 @@ func (s *structValue) Display(sty style) string {
 		return s.commentedSingleLine()
 	case SingleLine:
 		return s.singleLine()
-	case JSON:
-		return s.json()
+	//case JSON:
+	//		return s.json()
 	default:
 		panic("unknown style requested")
 	}
