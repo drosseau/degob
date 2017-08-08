@@ -152,9 +152,6 @@ map[string]Anon74_1da8c6d2{"key one": Anon74_1da8c6d2{Complex: (-2+3i), Float: 1
 ## TODO
 
 - Printing stylized output isn't complete yet.
-- `display.go` and `type.go` are a mess
-- Some tests are old and no longer passing
-- Streaming no go still
 - A lot more testing
 - Documentation
 - Errors maybe could be handled better and I haven't tested if the byte count on error is correct or not yet

@@ -111,9 +111,41 @@ type Result struct {
 // on the returned channel. Errors do not stop the decoding. You can
 // stop the decoding by closing the passed kill struct. If it is nil
 // DecodeStream doesn't stop until EOF.
-func (dec *Decoder) DecodeStream(kill <-chan struct{}) <-chan *Result {
-	panic("not implemented")
-	return nil
+func (dec *Decoder) DecodeStream(kill <-chan struct{}) <-chan Result {
+	dec.clearGob()
+	c := make(chan Result)
+	go func() {
+		defer close(c)
+		for {
+			dec.getGobPiece()
+			if dec.err != nil {
+				if dec.err.Err == io.EOF {
+					return
+				}
+				c <- Result{Err: dec.err}
+				dec.err = nil
+			}
+			dec.decodeGobPiece()
+			if dec.err != nil {
+				c <- Result{Err: dec.err}
+				dec.err = nil
+			}
+			if dec.decodedValue != nil {
+				g := new(Gob)
+				dec.setGob(g)
+				c <- Result{Gob: g}
+				select {
+				case <-kill:
+					return
+				default:
+					dec.clearGob()
+				}
+			} else {
+				dec.gobBuf.Reset()
+			}
+		}
+	}()
+	return c
 }
 
 func (dec *Decoder) genError(err error) *Error {
