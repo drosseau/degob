@@ -22,6 +22,14 @@ Usage of ./degob:
 
 This should work on a lot of different and simple inputs but, since this isn't quite stable yet, some things probably won't work.
 
+### Limitations
+
+There are a few limitations that I can't really get around.
+
+- gobs don't include information about the bit size of the type so all types are their largest possible (`int64`, `uint64`, `complex128`, `float64`) so as to be able to accept anything.
+- `byte`s are received as `uint64`, but `[]byte` is correct.
+
+
 ### Sample output
 
 Binary blob of a `map[interface{}]interface{}`
