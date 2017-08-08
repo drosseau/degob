@@ -49,9 +49,10 @@ func NewDecoder(r io.Reader) *Decoder {
 
 // Decode reads all data on the input reader and decodes the Gobs returning
 // a slice of `Gob`s.
-func (dec *Decoder) Decode() (*Gob, *Error) {
+func (dec *Decoder) Decode() ([]*Gob, error) {
 	dec.bytesProcessed = 0
 	dec.clearGob()
+	gobs := make([]*Gob, 0, 5)
 	for {
 		dec.getGobPiece()
 		if dec.err != nil {
@@ -64,9 +65,21 @@ func (dec *Decoder) Decode() (*Gob, *Error) {
 		if dec.err != nil {
 			return nil, dec.err
 		}
-		dec.gobBuf.Reset()
+		// we read the value of one of the input gobs and now we're on
+		// to the next
+		if dec.decodedValue != nil {
+			g := new(Gob)
+			dec.setGob(g)
+			gobs = append(gobs, g)
+			dec.clearGob()
+		} else {
+			dec.gobBuf.Reset()
+		}
 	}
-	g := new(Gob)
+	return gobs, nil
+}
+
+func (dec *Decoder) setGob(g *Gob) {
 	g.Value = dec.decodedValue
 	if len(dec.seenTypes) > 0 {
 		for _, t := range dec.seenTypes {
@@ -86,7 +99,6 @@ func (dec *Decoder) Decode() (*Gob, *Error) {
 		}
 		g.Types = dec.seenTypes
 	}
-	return g, nil
 }
 
 // Result is used for streaming
@@ -149,8 +161,10 @@ func (dec *Decoder) decodeGobPiece() {
 			if !ok || w.StructT == nil {
 				dec.consumeNextUint(0)
 			}
+			// each gob will have a value so after we read it
+			// let's return and add it to the returned *Gob's
 			dec.readValue(id, &dec.decodedValue)
-			continue
+			return
 		}
 		// we have a type definition
 		dec.readType(-id)
@@ -301,7 +315,7 @@ func (dec *Decoder) readNonNilInterface(v *Value, nl int) {
 	if dec.err != nil {
 		return
 	}
-	var into _interface_type
+	var into interfaceValue
 	nameB := make([]byte, nl)
 	dec.gobBuf.Read(nameB)
 	into.name = string(nameB)

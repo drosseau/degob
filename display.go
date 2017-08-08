@@ -63,14 +63,6 @@ func (s *StructType) String() string {
 	return st
 }
 
-// pretty printed as []elemType{
-//		... value.display() ...
-//	}
-type sliceValue struct {
-	elemType string
-	values   []Value
-}
-
 func (v sliceValue) valuesSep(sty style, sep string) string {
 	var out []string
 	for _, val := range v.values {
@@ -90,31 +82,6 @@ func (v sliceValue) Display(sty style) string {
 	default:
 		panic("unimplemented style")
 	}
-}
-
-func (v sliceValue) Equal(o Value) bool {
-	ov, ok := o.(*sliceValue)
-	if !ok {
-		return false
-	}
-	if len(v.values) != len(ov.values) {
-		return false
-	}
-	for i, v := range v.values {
-		if !v.Equal(ov.values[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-// pretty printed as [length]elemType{
-//		... value.display() ...
-//	}
-type arrayValue struct {
-	elemType string
-	length   int
-	values   []Value
 }
 
 func (v arrayValue) valuesSep(sty style, sep string) string {
@@ -148,31 +115,6 @@ func (v arrayValue) getValues(sty style) string {
 	return s
 }
 
-func (v arrayValue) Equal(o Value) bool {
-	ov, ok := o.(*arrayValue)
-	if !ok {
-		return false
-	}
-	if v.length != ov.length {
-		return false
-	}
-	for i, v := range v.values {
-		if !v.Equal(ov.values[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-// pretty printed as []map[key]elem{
-//		.. value.display(): value.display() ..
-// }
-type mapValue struct {
-	keyType  string
-	elemType string
-	values   map[Value]Value
-}
-
 func (v mapValue) getValues(sty style) string {
 	var out string
 	nval := len(v.values)
@@ -192,37 +134,6 @@ func (v mapValue) Display(sty style) string {
 	return fmt.Sprintf("map[%s]%s{%s}", v.keyType, v.elemType, v.getValues(sty))
 }
 
-func (v mapValue) Equal(o Value) bool {
-	ov, ok := o.(*mapValue)
-	if !ok {
-		return false
-	}
-	if v.keyType != ov.keyType {
-		return false
-	}
-	if v.elemType != ov.elemType {
-		return false
-	}
-	for k, v := range v.values {
-		ov, ok := ov.values[k]
-		if !ok {
-			return false
-		}
-		if !v.Equal(ov) {
-			return false
-		}
-	}
-	return true
-}
-
-// pretty printed as name {
-//		... fields[name]: fields[value].display(), ...
-//	}
-type structValue struct {
-	name   string
-	fields map[string]Value
-}
-
 func (s *structValue) Display(sty style) string {
 	switch sty {
 	case CommentedSingleLine:
@@ -234,26 +145,6 @@ func (s *structValue) Display(sty style) string {
 	default:
 		panic("unknown style requested")
 	}
-}
-
-func (s *structValue) Equal(o Value) bool {
-	v, ok := o.(*structValue)
-	if !ok {
-		return false
-	}
-	if s.name != v.name {
-		return false
-	}
-	for k, val := range s.fields {
-		ov, ok := v.fields[k]
-		if !ok {
-			return false
-		}
-		if !val.Equal(ov) {
-			return false
-		}
-	}
-	return true
 }
 
 func (s *structValue) commentedSingleLine() string {
@@ -288,4 +179,29 @@ func (s *structValue) singleLine() string {
 
 func (s *structValue) json() string {
 	return "{}"
+}
+
+func (v _bool_type) Display(sty style) string {
+	return fmt.Sprintf("%v", bool(v))
+}
+func (v _int_type) Display(sty style) string {
+	return fmt.Sprintf("%v", int64(v))
+}
+func (v _uint_type) Display(sty style) string {
+	return fmt.Sprintf("%v", uint64(v))
+}
+func (v _float_type) Display(sty style) string {
+	return fmt.Sprintf("%v", float64(v))
+}
+func (v _bytes_type) Display(sty style) string {
+	return fmt.Sprintf("%#v", []byte(v))
+}
+func (v _string_type) Display(sty style) string {
+	return fmt.Sprintf("\"%v\"", string(v))
+}
+func (v _complex_type) Display(sty style) string {
+	return fmt.Sprintf("%#v", complex128(v))
+}
+func (v interfaceValue) Display(sty style) string {
+	return fmt.Sprintf("%v", v.value.Display(sty))
 }

@@ -3,6 +3,7 @@ package degob
 import (
 	"encoding/gob"
 	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 )
@@ -50,7 +51,9 @@ type degobTestObject struct {
 	expected *Gob
 }
 
-const unpredictableId typeId = -100000
+const (
+	unpredictableId typeId = -100000
+)
 
 var testObjects = []degobTestObject{
 	degobTestObject{
@@ -78,24 +81,24 @@ var testObjects = []degobTestObject{
 				keyType:  "interface{}",
 				elemType: "interface{}",
 				values: map[Value]Value{
-					_interface_type{
+					interfaceValue{
 						name:  "string",
 						value: _string_type("StringToBool"),
-					}: _interface_type{
+					}: interfaceValue{
 						name:  "bool",
 						value: _bool_type(false),
 					},
-					_interface_type{
+					interfaceValue{
 						name:  "string",
 						value: _string_type("StringToInt"),
-					}: _interface_type{
+					}: interfaceValue{
 						name:  "int",
 						value: _int_type(12),
 					},
-					_interface_type{
+					interfaceValue{
 						name:  "int",
 						value: _int_type(1234),
-					}: _interface_type{
+					}: interfaceValue{
 						name:  "string",
 						value: _string_type("IntToString"),
 					},
@@ -309,7 +312,7 @@ var testObjects = []degobTestObject{
 				unpredictableId - 1: &WireType{
 					StructT: &StructType{
 						CommonType: CommonType{
-							Name: "struct {Float float64; Int int64}",
+							Name: "Anon71_0194fdc2",
 							Id:   int(unpredictableId),
 						},
 						Field: []*FieldType{
@@ -326,25 +329,25 @@ var testObjects = []degobTestObject{
 				},
 			},
 			Value: &arrayValue{
-				elemType: "struct {Float float64; Int int64}",
+				elemType: "Anon71_0194fdc2",
 				length:   3,
 				values: []Value{
 					&structValue{
-						name: "struct {Float float64; Int int64}",
+						name: "Anon71_0194fdc2",
 						fields: map[string]Value{
 							"Float": _float_type(1.5),
 							"Int":   _int_type(10),
 						},
 					},
 					&structValue{
-						name: "struct {Float float64; Int int64}",
+						name: "Anon71_0194fdc2",
 						fields: map[string]Value{
 							"Float": _float_type(-1.5),
 							"Int":   _int_type(-10),
 						},
 					},
 					&structValue{
-						name: "struct {Float float64; Int int64}",
+						name: "Anon71_0194fdc2",
 						fields: map[string]Value{
 							"Float": _float_type(0.0),
 							"Int":   _int_type(0),
@@ -420,15 +423,17 @@ var testObjects = []degobTestObject{
 			Types: map[typeId]*WireType{
 				unpredictableId: &WireType{
 					MapT: &MapType{
-						CommonType: CommonType{Id: int(unpredictableId)},
-						Key:        unpredictableId,
-						Elem:       unpredictableId,
+						CommonType: CommonType{
+							Id: int(unpredictableId),
+						},
+						Key:  unpredictableId,
+						Elem: unpredictableId,
 					},
 				},
 				unpredictableId - 1: &WireType{
 					StructT: &StructType{
 						CommonType: CommonType{
-							Name: "struct {Complex complex128; Float float64}",
+							Name: "Anon75_fa2ffcc0",
 							Id:   int(unpredictableId),
 						},
 						Field: []*FieldType{
@@ -446,17 +451,17 @@ var testObjects = []degobTestObject{
 			},
 			Value: &mapValue{
 				keyType:  "complex128",
-				elemType: "struct {Complex complex128; Float float64}",
+				elemType: "Anon75_fa2ffcc0",
 				values: map[Value]Value{
 					_complex_type(5 - 2.1i): &structValue{
-						name: "struct {Complex complex128; Float float64}",
+						name: "Anon75_fa2ffcc0",
 						fields: map[string]Value{
 							"Complex": _complex_type(-2 + 3i),
 							"Float":   _float_type(10.2),
 						},
 					},
 					_complex_type(10.2 + 3.5i): &structValue{
-						name: "struct {Complex complex128; Float float64}",
+						name: "Anon75_fa2ffcc0",
 						fields: map[string]Value{
 							"Complex": _complex_type(2 - 3i),
 							"Float":   _float_type(-10.2),
@@ -556,7 +561,7 @@ func compareGobs(expected *Gob, o *Gob, fname string, t *testing.T) {
 		v := expected.Value
 		ov := o.Value
 		if !v.Equal(ov) {
-			s := fmt.Sprintf("expected Value not found for gob in %s:\n\t%s\nFound value:\n\t%s", fname, v, ov)
+			s := fmt.Sprintf("expected Value not found for gob in %s:\n\t%s\nFound value:\n\t%s", fname, v.Display(SingleLine), ov.Display(SingleLine))
 			t.Fatal(s)
 		}
 	}
@@ -616,6 +621,7 @@ func compareSlice(expected *SliceType, got *SliceType) bool {
 	if got == nil {
 		return false
 	}
+
 	if expected.CommonType.Name != got.CommonType.Name {
 		return false
 	}
@@ -632,6 +638,7 @@ func compareArray(expected *ArrayType, got *ArrayType) bool {
 	if got == nil {
 		return false
 	}
+
 	if expected.CommonType.Name != got.CommonType.Name {
 		return false
 	}
@@ -690,6 +697,8 @@ func TestMain(m *testing.M) {
 	gob.Register(Inner{})
 	gob.Register(SliceInner{})
 	gob.Register(ArrayInner{})
+	// setting this allows us to get the anon struct names
+	rand.Seed(0)
 	for _, obj := range testObjects {
 		f = openFile(obj.fileName)
 		err = gob.NewEncoder(f).Encode(obj.item)

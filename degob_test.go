@@ -20,10 +20,10 @@ func TestDegob(t *testing.T) {
 		}
 
 		dec := NewDecoder(&buf)
-		degobbed, derr := dec.Decode()
+		gobs, derr := dec.Decode()
 		if derr != nil {
 			t.Fatalf("err: %v decoding gob in file: %s", derr, obj.fileName)
 		}
-		compareGobs(obj.expected, degobbed, obj.fileName, t)
+		compareGobs(obj.expected, gobs[0], obj.fileName, t)
 	}
 }

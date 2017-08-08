@@ -66,16 +66,26 @@ func main() {
 	}
 
 	dec := degob.NewDecoder(in)
-	gob, err := dec.Decode()
+	gobs, err := dec.Decode()
 	if err != nil {
 		errorf("failed to decode gob: %s\n", err)
 	}
-	errg := gob.WriteTypes(out)
-	if errg != nil {
-		errorf("failed to write types: %s\n", errg)
-	}
-	errg = gob.WriteValue(out, degob.SingleLine)
-	if errg != nil {
-		errorf("failed to write value: %s\n", errg)
+	for i, g := range gobs {
+		_, err = fmt.Fprintf(out, "// Decoded gob #%d\n\n", i+1)
+		if err != nil {
+			errorf("error writing to output: %v\n", err)
+		}
+		err := g.WriteTypes(out)
+		if err != nil {
+			errorf("failed to write types: %s\n", err)
+		}
+		err = g.WriteValue(out, degob.SingleLine)
+		if err != nil {
+			errorf("failed to write value: %s\n", err)
+		}
+		_, err = fmt.Fprintf(out, "\n// End gob #%d\n\n", i+1)
+		if err != nil {
+			errorf("error writing to output: %v\n", err)
+		}
 	}
 }

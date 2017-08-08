@@ -1,7 +1,5 @@
 package degob
 
-import "fmt"
-
 type WireType struct {
 	ArrayT  *ArrayType
 	SliceT  *SliceType
@@ -42,6 +40,7 @@ type MapType struct {
 }
 
 const (
+	// builtin types
 	_bool_id      typeId = 1
 	_int_id       typeId = 2
 	_uint_id      typeId = 3
@@ -58,30 +57,109 @@ const (
 	_reserved5_id typeId = 13
 	_reserved6_id typeId = 14
 	_reserved7_id typeId = 15
-	// gob specific types
 )
 
-func (t typeId) name() string {
-	switch t {
-	case _bool_id:
-		return "bool"
-	case _int_id:
-		return "int64"
-	case _uint_id:
-		return "uint64"
-	case _float_id:
-		return "float64"
-	case _bytes_id:
-		return "[]byte"
-	case _string_id:
-		return "string"
-	case _complex_id:
-		return "complex128"
-	case _interface_id:
-		return "interface{}"
-	default:
-		panic("unknown id")
+// Value is any displayable value
+type Value interface {
+	Equal(Value) bool
+	Display(sty style) string
+}
+
+type sliceValue struct {
+	elemType string
+	values   []Value
+}
+
+func (v sliceValue) Equal(o Value) bool {
+	ov, ok := o.(*sliceValue)
+	if !ok {
+		return false
 	}
+	if len(v.values) != len(ov.values) {
+		return false
+	}
+	for i, v := range v.values {
+		if !v.Equal(ov.values[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+type arrayValue struct {
+	elemType string
+	length   int
+	values   []Value
+}
+
+func (v arrayValue) Equal(o Value) bool {
+	ov, ok := o.(*arrayValue)
+	if !ok {
+		return false
+	}
+	if v.length != ov.length {
+		return false
+	}
+	for i, v := range v.values {
+		if !v.Equal(ov.values[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+type mapValue struct {
+	keyType  string
+	elemType string
+	values   map[Value]Value
+}
+
+func (v mapValue) Equal(o Value) bool {
+	ov, ok := o.(*mapValue)
+	if !ok {
+		return false
+	}
+	if v.keyType != ov.keyType {
+		return false
+	}
+	if v.elemType != ov.elemType {
+		return false
+	}
+	for k, v := range v.values {
+		ov, ok := ov.values[k]
+		if !ok {
+			return false
+		}
+		if !v.Equal(ov) {
+			return false
+		}
+	}
+	return true
+}
+
+type structValue struct {
+	name   string
+	fields map[string]Value
+}
+
+func (s *structValue) Equal(o Value) bool {
+	v, ok := o.(*structValue)
+	if !ok {
+		return false
+	}
+	if s.name != v.name {
+		return false
+	}
+	for k, val := range s.fields {
+		ov, ok := v.fields[k]
+		if !ok {
+			return false
+		}
+		if !val.Equal(ov) {
+			return false
+		}
+	}
+	return true
 }
 
 type _bool_type bool
@@ -94,10 +172,6 @@ func (v _bool_type) Equal(o Value) bool {
 	return v == ov
 }
 
-func (v _bool_type) Display(sty style) string {
-	return fmt.Sprintf("%v", bool(v))
-}
-
 type _int_type int64
 
 func (v _int_type) Equal(o Value) bool {
@@ -106,10 +180,6 @@ func (v _int_type) Equal(o Value) bool {
 		return false
 	}
 	return v == ov
-}
-
-func (v _int_type) Display(sty style) string {
-	return fmt.Sprintf("%v", int64(v))
 }
 
 type _uint_type uint64
@@ -122,10 +192,6 @@ func (v _uint_type) Equal(o Value) bool {
 	return v == ov
 }
 
-func (v _uint_type) Display(sty style) string {
-	return fmt.Sprintf("%v", uint64(v))
-}
-
 type _float_type float64
 
 func (v _float_type) Equal(o Value) bool {
@@ -134,10 +200,6 @@ func (v _float_type) Equal(o Value) bool {
 		return false
 	}
 	return v == ov
-}
-
-func (v _float_type) Display(sty style) string {
-	return fmt.Sprintf("%v", float64(v))
 }
 
 type _bytes_type []byte
@@ -159,10 +221,6 @@ func (v _bytes_type) Equal(o Value) bool {
 	return true
 }
 
-func (v _bytes_type) Display(sty style) string {
-	return fmt.Sprintf("%#v", []byte(v))
-}
-
 type _string_type string
 
 func (v _string_type) Equal(o Value) bool {
@@ -171,10 +229,6 @@ func (v _string_type) Equal(o Value) bool {
 		return false
 	}
 	return v == ov
-}
-
-func (v _string_type) Display(sty style) string {
-	return fmt.Sprintf("\"%v\"", string(v))
 }
 
 type _complex_type complex128
@@ -187,17 +241,13 @@ func (v _complex_type) Equal(o Value) bool {
 	return v == ov
 }
 
-func (v _complex_type) Display(sty style) string {
-	return fmt.Sprintf("%#v", complex128(v))
-}
-
-type _interface_type struct {
+type interfaceValue struct {
 	name  string
 	value Value
 }
 
-func (v _interface_type) Equal(o Value) bool {
-	ov, ok := o.(_interface_type)
+func (v interfaceValue) Equal(o Value) bool {
+	ov, ok := o.(interfaceValue)
 	if !ok {
 		return false
 	}
@@ -208,10 +258,6 @@ func (v _interface_type) Equal(o Value) bool {
 	if !eq {
 	}
 	return eq
-}
-
-func (v _interface_type) Display(sty style) string {
-	return fmt.Sprintf("%v", v.value.Display(sty))
 }
 
 func valueFor(id typeId) Value {
@@ -238,7 +284,7 @@ func valueFor(id typeId) Value {
 		var v _complex_type
 		return v
 	case _interface_id:
-		var v _interface_type
+		var v interfaceValue
 		return v
 	default:
 		panic("unknown id")
@@ -249,15 +295,25 @@ func isBuiltin(id typeId) bool {
 	return (id >= 1) && (id <= 8)
 }
 
-// ???
-type interfaceValue struct{}
-
-func (v interfaceValue) Display(sty style) string {
-	return ""
-}
-
-// Value is any displayable value
-type Value interface {
-	Equal(Value) bool
-	Display(sty style) string
+func (t typeId) name() string {
+	switch t {
+	case _bool_id:
+		return "bool"
+	case _int_id:
+		return "int64"
+	case _uint_id:
+		return "uint64"
+	case _float_id:
+		return "float64"
+	case _bytes_id:
+		return "[]byte"
+	case _string_id:
+		return "string"
+	case _complex_id:
+		return "complex128"
+	case _interface_id:
+		return "interface{}"
+	default:
+		panic("unknown id")
+	}
 }
