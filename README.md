@@ -8,7 +8,7 @@ The easiest way to use all of this is to just build the binary in `cmds/degob` a
 
 ## Usage
 
-Create a new `Decoder` over your reader using `NewDecoder` and then decode that into a slice of `Gob`s with `Decode` or stream `Gob`s with `DecodeStream`. `DecodeStream` isn't fully tested yet and will probably still fumble with errors. Once you have `Gob`s you can either play with the types directly or just print them out to a writer using the `WriteTypes` and `WriteValues` methods.
+Create a new `Decoder` over your reader using `NewDecoder` and then decode that into a slice of `Gob`s with `Decode` or stream `Gob`s with `DecodeStream`. `DecodeStream` seems fairly stable, but it was difficult to test how it handles all error cases, so be wary of errors. Once you have `Gob`s you can either play with the types directly or just print them out to a writer using the `WriteTypes` and `WriteValues` methods.
 
 The output from the Write methods on Gob should be close to valid Go source. One obvious instance that this isn't true is if the gob defines a type that isn't a struct (ie when sending a raw slice like `[]Foo` it first defines an unnamed type `[]Foo`).
 

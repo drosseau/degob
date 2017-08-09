@@ -53,8 +53,16 @@ type Decoder struct {
 	decodedValue   Value
 	bytesProcessed uint64
 
-	err *Error
+	err     *Error
+	inValue bool // are we currently reading a value? this is for streaming errors
 }
+
+type gobType uint8
+
+const (
+	valueGob gobType = iota
+	typeGob
+)
 
 // NewDecoder returns a ready to use decoder for the underlying Reader
 func NewDecoder(r io.Reader) *Decoder {
@@ -124,14 +132,59 @@ type Result struct {
 	Err *Error
 }
 
+// streamError cleans up after a streaming error and returns whether
+// or not we can continue
+func (dec *Decoder) streamError(c chan<- Result, stop <-chan struct{}) bool {
+	c <- Result{Err: dec.err}
+	if dec.err.Err == io.ErrUnexpectedEOF {
+		return false
+	}
+	if dec.inValue {
+		dec.decodedValue = nil
+		dec.err = nil
+		dec.clearGob()
+		return true
+	}
+	for {
+		// set it to nil so we can just keep eating
+		dec.err = nil
+		// we're jsut going to ignore errors until
+		// we are in a value piece and then break
+		dec.getGobPiece()
+		id := dec.readTypeId()
+		if id > 0 {
+			break
+		}
+		// if we ever hit EOF we have to leave
+		if dec.err.Err == io.EOF || dec.err.Err == io.ErrUnexpectedEOF {
+			return false
+		}
+		select {
+		case <-stop:
+			return false
+		default:
+		}
+	}
+	dec.decodedValue = nil
+	dec.err = nil
+	dec.clearGob()
+	return true
+}
+
 // DecodeStream keeps reading from the underlying reader and returning
 // on the returned channel. Errors do not stop the decoding. You can
-// stop the decoding by closing the passed kill struct. If it is nil
+// stop the decoding by closing the passed stop struct. If it is nil
 // DecodeStream doesn't stop until EOF.
-func (dec *Decoder) DecodeStream(kill <-chan struct{}) <-chan Result {
+//
+// Note that we attempt to simply drop any gob that causes an error, but in
+// practice it isn't particularly easy to test that. If you found that
+// you're getting multiple errors in a row it could be easier to just
+// stop the streamer and restart it. If you don't want any buffering
+// just send buffer as 0.
+func (dec *Decoder) DecodeStream(stop <-chan struct{}, buffer int) <-chan Result {
 	dec.bytesProcessed = 0
 	dec.clearGob()
-	c := make(chan Result)
+	c := make(chan Result, buffer)
 	go func() {
 		defer close(c)
 		for {
@@ -140,26 +193,22 @@ func (dec *Decoder) DecodeStream(kill <-chan struct{}) <-chan Result {
 				if dec.err.Err == io.EOF {
 					return
 				}
-				c <- Result{Err: dec.err}
-				if dec.err.Err == io.ErrUnexpectedEOF {
+				if !dec.streamError(c, stop) {
 					return
 				}
-				dec.err = nil
 			}
 			dec.decodeGobPiece()
 			if dec.err != nil {
-				c <- Result{Err: dec.err}
-				if dec.err.Err == io.ErrUnexpectedEOF {
+				if !dec.streamError(c, stop) {
 					return
 				}
-				dec.err = nil
 			}
 			if dec.decodedValue != nil {
 				g := new(Gob)
 				dec.setGob(g)
 				c <- Result{Gob: g}
 				select {
-				case <-kill:
+				case <-stop:
 					return
 				default:
 					dec.clearGob()
@@ -222,6 +271,7 @@ func (dec *Decoder) decodeGobPiece() {
 	for dec.err == nil && dec.gobBuf.Len() > 0 {
 		id := dec.readTypeId()
 		if id >= 0 {
+			dec.inValue = true
 			dec.decodedValue = dec.valueForType(id)
 			if dec.err != nil {
 				return
@@ -235,6 +285,7 @@ func (dec *Decoder) decodeGobPiece() {
 			dec.readValue(id, &dec.decodedValue)
 			return
 		}
+		dec.inValue = false
 		// we have a type definition
 		dec.readType(-id)
 	}

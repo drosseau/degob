@@ -107,16 +107,32 @@ var testObjects = []degobTestObject{
 		},
 	},
 	degobTestObject{
-		fileName: "nestedstructempty.bin",
-		item:     &Test{},
+		fileName: "nestedstructfull.bin",
+		item: Test{
+			W: Inner{
+				A: 3.14,
+				B: 5 + 3i,
+				C: []byte{1, 2, 3, 4, 5},
+			},
+			X: -10,
+			Y: 10,
+			Z: "Hello",
+		},
 		expected: &Gob{
 			Value: &structValue{
 				name: "Test",
 				fields: map[string]Value{
 					"W": &structValue{
-						name:   "Inner",
-						fields: nil,
+						name: "Inner",
+						fields: map[string]Value{
+							"A": _float_type(3.14),
+							"B": _complex_type(5 + 3i),
+							"C": _bytes_type([]byte{1, 2, 3, 4, 5}),
+						},
 					},
+					"X": _int_type(-10),
+					"Y": _uint_type(10),
+					"Z": _string_type("Hello"),
 				},
 			},
 			Types: map[typeId]*WireType{
@@ -151,32 +167,16 @@ var testObjects = []degobTestObject{
 		},
 	},
 	degobTestObject{
-		fileName: "nestedstructfull.bin",
-		item: Test{
-			W: Inner{
-				A: 3.14,
-				B: 5 + 3i,
-				C: []byte{1, 2, 3, 4, 5},
-			},
-			X: -10,
-			Y: 10,
-			Z: "Hello",
-		},
+		fileName: "nestedstructempty.bin",
+		item:     &Test{},
 		expected: &Gob{
 			Value: &structValue{
 				name: "Test",
 				fields: map[string]Value{
 					"W": &structValue{
-						name: "Inner",
-						fields: map[string]Value{
-							"A": _float_type(3.14),
-							"B": _complex_type(5 + 3i),
-							"C": _bytes_type([]byte{1, 2, 3, 4, 5}),
-						},
+						name:   "Inner",
+						fields: nil,
 					},
-					"X": _int_type(-10),
-					"Y": _uint_type(10),
-					"Z": _string_type("Hello"),
 				},
 			},
 			Types: map[typeId]*WireType{
@@ -711,12 +711,14 @@ func TestMain(m *testing.M) {
 
 	exitVal := m.Run()
 
-	for _, obj := range testObjects {
-		err = os.Remove(obj.fileName)
-		if err != nil {
-			panic(err)
+	/*
+		for _, obj := range testObjects {
+			err = os.Remove(obj.fileName)
+			if err != nil {
+				panic(err)
+			}
 		}
-	}
+	*/
 	os.Exit(exitVal)
 }
 

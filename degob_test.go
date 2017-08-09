@@ -25,12 +25,15 @@ func TestDegob(t *testing.T) {
 
 func TestGobStream(t *testing.T) {
 	var buf bytes.Buffer
-	for _, obj := range testObjects {
+	for i, obj := range testObjects {
 		fileToBufferTest(obj.fileName, &buf, t)
+		if i == 2 {
+			break
+		}
 	}
 	d := NewDecoder(&buf)
 	i := 0
-	for g := range d.DecodeStream(nil) {
+	for g := range d.DecodeStream(nil, 0) {
 		if g.Err != nil {
 			t.Fatalf("err: %v decoding gob in file: %s", g.Err, testObjects[i].fileName)
 		}
@@ -42,12 +45,16 @@ func TestGobStream(t *testing.T) {
 func TestKillGobStream(t *testing.T) {
 	kill := make(chan struct{})
 	var buf bytes.Buffer
-	tot := len(testObjects)
-	for _, obj := range testObjects {
+	tot := 0
+	for i, obj := range testObjects {
 		fileToBufferTest(obj.fileName, &buf, t)
+		tot += 1
+		if i == 2 {
+			break
+		}
 	}
 	d := NewDecoder(&buf)
-	out := d.DecodeStream(kill)
+	out := d.DecodeStream(kill, 0)
 	close(kill)
 	i := 0
 	for g := range out {
@@ -59,6 +66,68 @@ func TestKillGobStream(t *testing.T) {
 	}
 	if !(i < tot) {
 		t.Fatal("expected to exit streaming early")
+	}
+}
+
+func TestDuplicateDefinition(t *testing.T) {
+	obj := testObjects[1]
+	var buf bytes.Buffer
+	fileToBufferTest(obj.fileName, &buf, t)
+	b := buf.Bytes()
+	b[46] = 0x83
+	buf.Reset()
+	_, err := buf.Write(b)
+	if err != nil {
+		t.Fatal("writing to buffer", err)
+	}
+	d := NewDecoder(&buf)
+	_, err = d.Decode()
+	if err == nil {
+		t.Fatal("should have errored")
+	}
+	derr := err.(*Error)
+	if derr.Processed != 47 {
+		t.Fatal("should have been at byte 47 but was at", derr.Processed)
+	}
+}
+
+func TestNonEOFErrorStream(t *testing.T) {
+	var buf bytes.Buffer
+	for i, obj := range testObjects {
+		if i == 1 {
+			var tmpbuf bytes.Buffer
+			fileToBufferTest(obj.fileName, &tmpbuf, t)
+			b := tmpbuf.Bytes()
+			b[46] = 0x83
+			_, err := buf.Write(b)
+			if err != nil {
+				t.Fatal("writing to buffer", err)
+			}
+			continue
+		} else {
+			fileToBufferTest(obj.fileName, &buf, t)
+		}
+		if i == 2 {
+			break
+		}
+	}
+	d := NewDecoder(&buf)
+	i := 0
+	for g := range d.DecodeStream(nil, 0) {
+		if i != 1 {
+			if g.Err != nil {
+				t.Fatalf("err: %v decoding gob in file: %s", g.Err, testObjects[i].fileName)
+			}
+			compareGobs(testObjects[i].expected, g.Gob, testObjects[i].fileName, t)
+		} else {
+			if g.Err == nil {
+				t.Fatalf("expected error")
+			}
+		}
+		i += 1
+	}
+	if i != 3 {
+		t.Fatal("didn't process all gobs")
 	}
 }
 
@@ -82,7 +151,7 @@ func TestUnexpectedEOFStream(t *testing.T) {
 		fileToBufferTest(obj.fileName, &buf, t)
 	}
 	d := NewDecoder(&buf)
-	out := d.DecodeStream(nil)
+	out := d.DecodeStream(nil, 1)
 	i := 0
 	g := <-out
 	if g.Err != nil {
