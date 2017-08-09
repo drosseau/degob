@@ -6,12 +6,7 @@ import "io"
 // whole gob in case of error. Using a `bytes.Buffer` I can't do that when
 // also using the Read method because it effectively consumes the byte.
 // I'm not sure how this effects performance but I don't think it is a huge
-// deal and I can hide this behind an io.Reader interface to change it up
-// later.
-//
-// This is basically going to have all of the methods of a bytes.Buffer
-// just in case I find this to be a bad idea down the line and want
-// to replace it
+// deal
 type gobBuf struct {
 	data []byte // all of the data to be read
 	pos  int    // the current position
@@ -38,6 +33,10 @@ func (g *gobBuf) Write(b []byte) (int, error) {
 		return n, io.ErrShortWrite
 	}
 	return n, nil
+}
+
+func (g *gobBuf) Consumed(n int) {
+	g.pos += n
 }
 
 func (g *gobBuf) Cap() int {

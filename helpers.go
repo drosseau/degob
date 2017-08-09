@@ -8,37 +8,39 @@ import (
 type typeId int32
 
 // reads a uint from the reader
-func readUint(r io.Reader, into []byte, read *uint64) (uint64, *Error) {
+func readUint(r io.Reader, into []byte, read *uint64) (uint64, int, *Error) {
 	var n int
+	width := 1
 	n, err := r.Read(into[:1])
 	if err != nil {
 		if err == io.EOF {
-			return 0, genericError(io.ErrUnexpectedEOF, *read, nil)
+			return 0, width, genericError(io.ErrUnexpectedEOF, *read, nil)
 		}
 		var gobBytes []byte
 		if v, ok := r.(*gobBuf); ok {
 			gobBytes = v.Data()
 		}
-		return 0, genericError(err, *read, gobBytes)
+		return 0, width, genericError(err, *read, gobBytes)
 	}
 	*read += uint64(n)
 	b := into[0]
 	// anything less than 0x7f is encoded as a single byte with
 	// that value so we're done
 	if b <= 0x7f {
-		return uint64(b), nil
+		return uint64(b), width, nil
 	}
 	// FROM DOCS:
 	// Otherwise it is sent as a minimal-length big-endian (high byte first)
 	// byte stream holding the value, preceded by one byte holding the byte
 	// count, negated.
 	n = -int(int8(b))
+	width += n
 	if n > uintByteSize {
 		var gobBytes []byte
 		if v, ok := r.(*gobBuf); ok {
 			gobBytes = v.Data()
 		}
-		return 0, errUintTooBig(*read, gobBytes)
+		return 0, width, errUintTooBig(*read, gobBytes)
 	}
 	// now we read n bytes and that is our uint
 	n, err = io.ReadFull(r, into[0:n])
@@ -48,16 +50,16 @@ func readUint(r io.Reader, into []byte, read *uint64) (uint64, *Error) {
 			gobBytes = v.Data()
 		}
 		if err == io.EOF {
-			return 0, genericError(io.ErrUnexpectedEOF, *read, gobBytes)
+			return 0, width, genericError(io.ErrUnexpectedEOF, *read, gobBytes)
 		}
-		return 0, genericError(err, *read, gobBytes)
+		return 0, width, genericError(err, *read, gobBytes)
 	}
 	*read += uint64(n)
 	var val uint64
 	for _, b := range into[0:n] {
 		val = val<<8 | uint64(b)
 	}
-	return val, nil
+	return val, width, nil
 }
 
 func uintToInt(x uint64) int64 {

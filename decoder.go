@@ -183,7 +183,7 @@ func (dec *Decoder) getGobPiece() {
 	if dec.err != nil {
 		return
 	}
-	size, err := readUint(dec.r, dec.buf[:], &dec.bytesProcessed)
+	size, width, err := readUint(dec.r, dec.buf[:], &dec.bytesProcessed)
 	if err != nil {
 		if err.Err == io.ErrUnexpectedEOF {
 			// we actually are OK with an EOF here
@@ -193,9 +193,15 @@ func (dec *Decoder) getGobPiece() {
 		return
 	}
 	dec.gobBuf.Reset()
-	dec.gobBuf.Grow(int(size))
+	dec.gobBuf.Grow(width + int(size))
+	_, err_ := dec.gobBuf.Write(dec.buf[:width])
+	if err != nil {
+		dec.err = dec.genError(err_)
+		return
+	}
+	dec.gobBuf.Consumed(width)
 	// read the entire gob into the gob buffer
-	_, err_ := io.ReadFull(dec.r, dec.gobBuf.Bytes())
+	_, err_ = io.ReadFull(dec.r, dec.gobBuf.Bytes())
 	if err_ != nil {
 		if err_ == io.EOF {
 			dec.err = dec.genError(io.ErrUnexpectedEOF)
@@ -217,6 +223,9 @@ func (dec *Decoder) decodeGobPiece() {
 		id := dec.readTypeId()
 		if id >= 0 {
 			dec.decodedValue = dec.valueForType(id)
+			if dec.err != nil {
+				return
+			}
 			w, ok := dec.seenTypes[id]
 			if !ok || w.StructT == nil {
 				dec.consumeNextUint(0)
@@ -235,7 +244,7 @@ func (dec *Decoder) readTypeId() typeId {
 	if dec.err != nil {
 		return 0
 	}
-	n, err := readUint(&dec.gobBuf, dec.buf[:], &dec.bytesProcessed)
+	n, _, err := readUint(&dec.gobBuf, dec.buf[:], &dec.bytesProcessed)
 	if err != nil {
 		dec.err = err
 		return 0
@@ -286,7 +295,8 @@ func (dec *Decoder) valueForType(id typeId) Value {
 	if w, ok := dec.seenTypes[id]; ok {
 		return dec.valueForWireType(w)
 	}
-	panic("asked for value type for unknown type")
+	dec.err = dec.genError(errors.New("gob had value for unknown type"))
+	return nil
 }
 
 func (dec *Decoder) readValue(id typeId, v *Value) {
@@ -524,7 +534,7 @@ func (dec *Decoder) nextUint() uint64 {
 	if dec.err != nil {
 		return 0
 	}
-	delta, err := readUint(&dec.gobBuf, dec.buf[:], &dec.bytesProcessed)
+	delta, _, err := readUint(&dec.gobBuf, dec.buf[:], &dec.bytesProcessed)
 	if err != nil {
 		dec.err = err
 		return 0

@@ -2,6 +2,7 @@ package degob
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"testing"
 )
@@ -61,6 +62,47 @@ func TestKillGobStream(t *testing.T) {
 	}
 }
 
+func TestUnexpectedEOFStream(t *testing.T) {
+	var buf bytes.Buffer
+	for i, obj := range testObjects {
+		if i == 1 {
+			// get only part of it and break
+			f := openFileTest(obj.fileName, t)
+			b := make([]byte, 5)
+			_, err := io.ReadFull(f, b)
+			if err != nil {
+				t.Fatal("error reading to buf %v", err)
+			}
+			_, err = buf.Write(b)
+			if err != nil {
+				t.Fatal("error writing to buf %v", err)
+			}
+			break
+		}
+		fileToBufferTest(obj.fileName, &buf, t)
+	}
+	d := NewDecoder(&buf)
+	out := d.DecodeStream(nil)
+	i := 0
+	g := <-out
+	if g.Err != nil {
+		t.Fatalf("err: %v decoding gob in file: %s", g.Err, testObjects[i].fileName)
+	}
+	compareGobs(testObjects[0].expected, g.Gob, testObjects[i].fileName, t)
+	g = <-out
+	if g.Err == nil {
+		fmt.Println(g)
+		t.Fatal("expected an error")
+	}
+	if g.Err.Err != io.ErrUnexpectedEOF {
+		t.Fatal("expected io.ErrUnexpectedEOF")
+	}
+
+	for _ = range out {
+		t.Fatal("channel should be closed")
+	}
+}
+
 func TestUnexpectedEOF(t *testing.T) {
 	obj := testObjects[0]
 	f := openFileTest(obj.fileName, t)
@@ -82,5 +124,27 @@ func TestUnexpectedEOF(t *testing.T) {
 
 	if derr.Err != io.ErrUnexpectedEOF {
 		t.Fatalf("expected an ErrUnexpectedEOF error but was %v", derr.Err)
+	}
+}
+
+func TestBadGobUnexpectedTypeId(t *testing.T) {
+	obj := testObjects[3]
+	var buf bytes.Buffer
+	fileToBufferTest(obj.fileName, &buf, t)
+	b := buf.Bytes()
+	b[2] = 0x80
+	buf.Reset()
+	_, err := buf.Write(b)
+	if err != nil {
+		t.Fatal("writing to buffer", err)
+	}
+	d := NewDecoder(&buf)
+	_, err = d.Decode()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	derr := err.(*Error)
+	if derr.Processed != 3 {
+		t.Fatal("expected error to be at byte 3 but was at byte", derr.Processed)
 	}
 }

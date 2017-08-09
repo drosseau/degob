@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+// Error is a custom error type that hopefully gives a little more information
+// about where your error was in the Gob.
 type Error struct {
 	Processed uint64
 	Err       error
