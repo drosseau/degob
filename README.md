@@ -23,7 +23,7 @@ There are a few limitations that I can't really get around.
 
 ## TODO
 
-- Printing stylized output isn't complete yet.
-- A lot more testing
-- Documentation
-- Errors maybe could be handled better and I haven't tested if the byte count on error is correct or not yet
+- Printing stylized output
+- Some more testing (I'm around ~70%)
+- Include more "bad gob" tests, but to be honest this tool shouldn't be being used on bad gobs so this is pretty low priority and part of the reason I'm OK
+with some of the panics and lack of testing around bad gobs.
