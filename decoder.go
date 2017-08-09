@@ -134,6 +134,15 @@ type Result struct {
 
 // streamError cleans up after a streaming error and returns whether
 // or not we can continue
+//
+// I don't know enough to be 100% certain that this will always work but
+// according to gob structure once I hit a non negative type id I've left
+// my gob. The problem I have is that second star they put in that defintion
+//
+// (byteCount (-type id, encoding of a wireType)* (type id, encoding of a value))*
+//                                                                    here ~~~~~~^
+// it would seem that that be an issue with this method of dealing with
+// finding a problematic gob. How do I know that I'm actually in the last one?
 func (dec *Decoder) streamError(c chan<- Result, stop <-chan struct{}) bool {
 	c <- Result{Err: dec.err}
 	if dec.err.Err == io.ErrUnexpectedEOF {
