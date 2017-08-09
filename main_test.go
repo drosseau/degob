@@ -1,9 +1,9 @@
 package degob
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
-	"math/rand"
 	"os"
 	"testing"
 )
@@ -312,42 +312,44 @@ var testObjects = []degobTestObject{
 				unpredictableId - 1: &WireType{
 					StructT: &StructType{
 						CommonType: CommonType{
-							Name: "Anon71_0194fdc2",
+							Name: "Anon71",
 							Id:   int(unpredictableId),
 						},
 						Field: []*FieldType{
 							&FieldType{
-								Name: "Float",
-								Id:   int(_float_id),
+								Name:       "Float",
+								TypeString: "float64",
+								Id:         int(_float_id),
 							},
 							&FieldType{
-								Name: "Int",
-								Id:   int(_int_id),
+								Name:       "Int",
+								TypeString: "float64",
+								Id:         int(_int_id),
 							},
 						},
 					},
 				},
 			},
 			Value: &arrayValue{
-				elemType: "Anon71_0194fdc2",
+				elemType: "Anon71",
 				length:   3,
 				values: []Value{
 					&structValue{
-						name: "Anon71_0194fdc2",
+						name: "Anon71",
 						fields: map[string]Value{
 							"Float": _float_type(1.5),
 							"Int":   _int_type(10),
 						},
 					},
 					&structValue{
-						name: "Anon71_0194fdc2",
+						name: "Anon71",
 						fields: map[string]Value{
 							"Float": _float_type(-1.5),
 							"Int":   _int_type(-10),
 						},
 					},
 					&structValue{
-						name: "Anon71_0194fdc2",
+						name: "Anon71",
 						fields: map[string]Value{
 							"Float": _float_type(0.0),
 							"Int":   _int_type(0),
@@ -433,7 +435,7 @@ var testObjects = []degobTestObject{
 				unpredictableId - 1: &WireType{
 					StructT: &StructType{
 						CommonType: CommonType{
-							Name: "Anon75_fa2ffcc0",
+							Name: "Anon75",
 							Id:   int(unpredictableId),
 						},
 						Field: []*FieldType{
@@ -451,17 +453,17 @@ var testObjects = []degobTestObject{
 			},
 			Value: &mapValue{
 				keyType:  "complex128",
-				elemType: "Anon75_fa2ffcc0",
+				elemType: "Anon75",
 				values: map[Value]Value{
 					_complex_type(5 - 2.1i): &structValue{
-						name: "Anon75_fa2ffcc0",
+						name: "Anon75",
 						fields: map[string]Value{
 							"Complex": _complex_type(-2 + 3i),
 							"Float":   _float_type(10.2),
 						},
 					},
 					_complex_type(10.2 + 3.5i): &structValue{
-						name: "Anon75_fa2ffcc0",
+						name: "Anon75",
 						fields: map[string]Value{
 							"Complex": _complex_type(2 - 3i),
 							"Float":   _float_type(-10.2),
@@ -527,7 +529,7 @@ func compareGobs(expected *Gob, o *Gob, fname string, t *testing.T) {
 					t.Fatalf("expected Slice WireType not found, %v from gob in: `%s`\n", *wt.SliceT, fname)
 				}
 				if wt.StructT != nil {
-					s := "\nexpected WireType.StructT not found"
+					s := fmt.Sprintf("\nexpected WireType.StructT not found in %s", fname)
 					s += fmt.Sprintf("%s\n\tName: %s\n\tFields: ", s, wt.StructT.CommonType.Name)
 					for _, f := range wt.StructT.Field {
 						s += fmt.Sprintf("%v ", *f)
@@ -697,8 +699,7 @@ func TestMain(m *testing.M) {
 	gob.Register(Inner{})
 	gob.Register(SliceInner{})
 	gob.Register(ArrayInner{})
-	// setting this allows us to get the anon struct names
-	rand.Seed(0)
+	//rand.Seed(0)
 	for _, obj := range testObjects {
 		f = openFile(obj.fileName)
 		err = gob.NewEncoder(f).Encode(obj.item)
@@ -717,4 +718,21 @@ func TestMain(m *testing.M) {
 		}
 	}
 	os.Exit(exitVal)
+}
+
+func openFileTest(fname string, t *testing.T) *os.File {
+	f, err := os.Open(fname)
+	if err != nil {
+		t.Fatalf("err: %v opening file: %s", err, fname)
+	}
+	return f
+}
+
+func fileToBufferTest(fname string, buf *bytes.Buffer, t *testing.T) {
+	f := openFileTest(fname, t)
+	_, err := buf.ReadFrom(f)
+	f.Close()
+	if err != nil {
+		t.Fatalf("err: %v reading file: %s", err, fname)
+	}
 }

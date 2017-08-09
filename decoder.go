@@ -7,17 +7,29 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 // keep track of things we've named already so anonymous types don't get the
 // same name somehow
-var anonTypes map[string]struct{}
+var anonTypes map[string]struct{} = nil
 
 func init() {
-	anonTypes = make(map[string]struct{})
-	rand.Seed(time.Now().UnixNano())
+	if os.Getenv("DEGOB_NORAND") == "" {
+		anonTypes = make(map[string]struct{})
+		if seed := os.Getenv("DEGOB_SEED"); seed != "" {
+			s, err := strconv.ParseInt(seed, 10, 64)
+			if err != nil {
+				panic(fmt.Errorf("Tried to use custom seed %s which cannot be parsed to int64: %v", seed, err))
+			}
+			rand.Seed(s)
+		} else {
+			rand.Seed(time.Now().UnixNano())
+		}
+	}
 }
 
 // This is a gob
@@ -71,6 +83,7 @@ func (dec *Decoder) Decode() ([]*Gob, error) {
 		if dec.err != nil {
 			return nil, dec.err
 		}
+
 		// we read the value of one of the input gobs and now we're on
 		// to the next
 		if dec.decodedValue != nil {
@@ -78,8 +91,6 @@ func (dec *Decoder) Decode() ([]*Gob, error) {
 			dec.setGob(g)
 			gobs = append(gobs, g)
 			dec.clearGob()
-		} else {
-			dec.gobBuf.Reset()
 		}
 	}
 	return gobs, nil
@@ -118,6 +129,7 @@ type Result struct {
 // stop the decoding by closing the passed kill struct. If it is nil
 // DecodeStream doesn't stop until EOF.
 func (dec *Decoder) DecodeStream(kill <-chan struct{}) <-chan Result {
+	dec.bytesProcessed = 0
 	dec.clearGob()
 	c := make(chan Result)
 	go func() {
@@ -129,11 +141,17 @@ func (dec *Decoder) DecodeStream(kill <-chan struct{}) <-chan Result {
 					return
 				}
 				c <- Result{Err: dec.err}
+				if dec.err.Err == io.ErrUnexpectedEOF {
+					return
+				}
 				dec.err = nil
 			}
 			dec.decodeGobPiece()
 			if dec.err != nil {
 				c <- Result{Err: dec.err}
+				if dec.err.Err == io.ErrUnexpectedEOF {
+					return
+				}
 				dec.err = nil
 			}
 			if dec.decodedValue != nil {
@@ -146,8 +164,6 @@ func (dec *Decoder) DecodeStream(kill <-chan struct{}) <-chan Result {
 				default:
 					dec.clearGob()
 				}
-			} else {
-				dec.gobBuf.Reset()
 			}
 		}
 	}()
@@ -169,11 +185,17 @@ func (dec *Decoder) getGobPiece() {
 	}
 	size, err := readUint(dec.r, dec.buf[:], &dec.bytesProcessed)
 	if err != nil {
+		if err.Err == io.ErrUnexpectedEOF {
+			// we actually are OK with an EOF here
+			err.Err = io.EOF
+		}
 		dec.err = err
 		return
 	}
+	dec.gobBuf.Reset()
+	dec.gobBuf.Grow(int(size))
 	// read the entire gob into the gob buffer
-	_, err_ := io.CopyN(&dec.gobBuf, dec.r, int64(size))
+	_, err_ := io.ReadFull(dec.r, dec.gobBuf.Bytes())
 	if err_ != nil {
 		if err_ == io.EOF {
 			dec.err = dec.genError(io.ErrUnexpectedEOF)
@@ -641,7 +663,6 @@ func (dec *Decoder) decodeString(into *string) {
 
 // clears any gob that is already seenTypes
 func (dec *Decoder) clearGob() {
-	dec.gobBuf.Reset()
 	dec.seenTypes = make(map[typeId]*WireType)
 	dec.decodedValue = nil
 }
@@ -672,20 +693,23 @@ func (dec *Decoder) getName(id typeId) string {
 }
 
 func (dec *Decoder) anonymousStructTypeName(w *WireType) string {
-	follow := make([]byte, 4)
-	_, _ = rand.Read(follow)
-	var followString string
-	for {
-		followString = hex.EncodeToString(follow)
-		if _, ok := anonTypes[followString]; ok {
-			// this shouldn't happen much
-			_, _ = rand.Read(follow)
-		} else {
-			anonTypes[followString] = struct{}{}
-			break
+	s := fmt.Sprintf("Anon%d", w.StructT.Id)
+	if anonTypes != nil {
+		follow := make([]byte, 4)
+		_, _ = rand.Read(follow)
+		var followString string
+		for {
+			followString = hex.EncodeToString(follow)
+			if _, ok := anonTypes[followString]; ok {
+				// this shouldn't happen much
+				_, _ = rand.Read(follow)
+			} else {
+				anonTypes[followString] = struct{}{}
+				break
+			}
 		}
+		s += fmt.Sprintf("_%s", followString)
 	}
-	s := fmt.Sprintf("Anon%d_%s", w.StructT.Id, followString)
 	w.StructT.CommonType.Name = s
 	return s
 }

@@ -13,7 +13,7 @@ func readUint(r io.Reader, into []byte, read *uint64) (uint64, *Error) {
 	n, err := r.Read(into[:1])
 	if err != nil {
 		if err == io.EOF {
-			return 0, genericError(io.EOF, *read, nil)
+			return 0, genericError(io.ErrUnexpectedEOF, *read, nil)
 		}
 		var gobBytes []byte
 		if v, ok := r.(*gobBuf); ok {
