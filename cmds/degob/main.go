@@ -35,7 +35,7 @@ func getWriter() io.WriteCloser {
 		}
 		f, err := os.OpenFile(*outFile, opts, 0644)
 		if err != nil {
-			errorf("failed to open %s: %v\n", *outFile, err)
+			errorf("failed to open `%s` for writing: %v\n", *outFile, err)
 		}
 		return f
 	}
@@ -46,7 +46,7 @@ func getReader() io.ReadCloser {
 	if *inFile != "" {
 		f, err := os.Open(*outFile)
 		if err != nil {
-			errorf("failed to open %s: %v\n", *inFile, err)
+			errorf("failed to open `%s` for reading: %v\n", *inFile, err)
 		}
 		return f
 	}
@@ -58,25 +58,23 @@ type writer struct {
 	err error
 }
 
-func (w writer) writeStr(s string, v ...interface{}) {
-	if w.err != nil {
-		errorf("error writing output: %v\n", w.err)
-	}
-	_, w.err = fmt.Fprintf(w.w, s, v...)
-}
-
 func (w writer) Write(b []byte) (int, error) {
 	if w.err != nil {
 		errorf("error writing output: %v\n", w.err)
 	}
-	return w.w.Write(b)
+	var n int
+	n, w.err = w.w.Write(b)
+	return n, w.err
 }
 
 func (w writer) writeComment(s string, v ...interface{}) {
+	if w.err != nil {
+		errorf("error writing output: %v\n", w.err)
+	}
 	if *noComments {
 		return
 	}
-	w.writeStr(s, v...)
+	_, w.err = fmt.Fprintf(w.w, s, v...)
 }
 
 func main() {
@@ -100,10 +98,16 @@ func main() {
 		errorf("failed to decode gob: %s\n", err)
 	}
 	for i, g := range gobs {
-		w.writeComment("// Decoded gob #d\n\n//Types\n", i+1)
-		_ = g.WriteTypes(w)
+		w.writeComment("// Decoded gob %d\n\n//Types\n", i+1)
+		err := g.WriteTypes(w)
+		if err != nil {
+			errorf("error writing types: %v\n", err)
+		}
 		w.writeComment("// Values:")
-		_ = g.WriteValue(w, degob.SingleLine)
+		err = g.WriteValue(w, degob.SingleLine)
+		if err != nil {
+			errorf("error writing values: %v\n", err)
+		}
 		w.writeComment("\n// End gob %d\n\n", i+1)
 	}
 }
