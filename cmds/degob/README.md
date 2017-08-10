@@ -10,6 +10,8 @@ Usage of ./degob:
     	base64url input
   -ifile string
     	Input file (defaults to stdin)
+  -nc
+      don't print additional comments
   -ofile string
     	Output file (defaults to stdout)
   -trunc
@@ -32,17 +34,25 @@ If you come up with a gob this doesn't work with I wouldn't be surprised but mak
 00000070  6e 67                                             |ng|
 00000072
 ```
-`$ cat gob.bin | degob`
+`$ cat gob.bin | degob -nc`
 ```go
+// type ID: 65
+// map[interface{}]interface{}
+
+// type ID: 66
+type ArrayInner struct {
+  Float float64
+  Int int64
+}
+
+// type ID: 67
+type SliceInner struct {
+  Uint uint64
+  Byte uint64
+}
+
+map[interface{}]interface{}{"StringToBool": false,"StringToInt": 12,1234: "IntToString",ArrayInner{Float: 1.2, Int: 1}: SliceInner{Uint: 10, Byte: 4}}
 // Decoded gob #1
-
-// Types:
-map[interface{}]interface{}
-
-// Values:
-map[interface{}]interface{}{"StringToBool": false,"StringToInt": 12,1234: "IntToString"}
-
-// End gob #1
 ```
 
 `$ hexdump -C gob.bin`
@@ -62,22 +72,23 @@ map[interface{}]interface{}{"StringToBool": false,"StringToInt": 12,1234: "IntTo
 // Decoded gob #1
 
 // Types:
+// type ID: 65
 type Test struct {
-	W Inner
-	X int64
-	Y uint64
-	Z string
+  W Inner
+  X int64
+  Y uint64
+  Z string
 }
 
+// type ID: 66
 type Inner struct {
-	A float64
-	B complex128
-	C []byte
+  A float64
+  B complex128
+  C []byte
 }
 
 // Values:
-Test{W: Inner{A: 3.14, B: (5+3i), C: []byte{0x1, 0x2, 0x3, 0x4, 0x5}}, X: -10, Y: 10, Z: "Hello"}
-
+Test{X: -10, Y: 10, Z: "Hello", W: Inner{A: 3.14, B: (5+3i), C: []byte{0x1, 0x2, 0x3, 0x4, 0x5}}}
 
 // End gob #1
 ```
@@ -108,30 +119,34 @@ $ hexdump -C gob2.bin
 // Decoded gob #1
 
 // Types:
-[]SliceInner
+// type ID: 73
+// []SliceInner
 
+// type ID: 72
 type SliceInner struct {
   Uint uint64
   Byte uint64
 }
 
 // Values:
-[]SliceInner{SliceInner{Uint: 0, Byte: 48}, SliceInner{Uint: 5, Byte: 53}}
+[]SliceInner{SliceInner{Byte: 48, Uint: 0}, SliceInner{Uint: 5, Byte: 53}}
 
 // End gob #1
 
 // Decoded gob #2
 
 // Types:
-map[string]Anon74_1da8c6d2
+// type ID: 75
+// map[complex128]Anon74_6f36c303
 
-type Anon74_1da8c6d2 struct {
+// type ID: 74
+type Anon74_6f36c303 struct {
   Complex complex128
   Float float64
 }
 
 // Values:
-map[string]Anon74_1da8c6d2{"key one": Anon74_1da8c6d2{Complex: (-2+3i), Float: 10.2},"key two": Anon74_1da8c6d2{Complex: (2-3i), Float: -10.2}}
+map[complex128]Anon74_6f36c303{(5-2.1i): Anon74_6f36c303{Complex: (-2+3i), Float: 10.2},(10.2+3.5i): Anon74_6f36c303{Complex: (2-3i), Float: -10.2}}
 
 // End gob #2
 ```
