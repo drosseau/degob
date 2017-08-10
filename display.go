@@ -36,16 +36,41 @@ func (w *WireType) String() string {
 	}
 }
 
+// Id will return -1 for all nil wire types
+func (w *WireType) Id() int {
+	switch {
+	case w.StructT != nil:
+		return w.StructT.Id
+	case w.SliceT != nil:
+		return w.SliceT.Id
+	case w.ArrayT != nil:
+		return w.ArrayT.Id
+	case w.MapT != nil:
+		return w.MapT.Id
+	default:
+		return -1
+	}
+}
+
 func (a *ArrayType) String() string {
-	return fmt.Sprintf("[%d]%s", a.Len, a.ElemTypeString)
+	if a.CommonType.Name != "" {
+		return fmt.Sprintf("type %s [%d]%s", a.CommonType.Name, a.Len, a.ElemTypeString)
+	}
+	return fmt.Sprintf("// [%d]%s", a.Len, a.ElemTypeString)
 }
 
 func (s *SliceType) String() string {
-	return fmt.Sprintf("[]%s", s.ElemTypeString)
+	if s.CommonType.Name != "" {
+		return fmt.Sprintf("type %s []%s", s.CommonType.Name, s.ElemTypeString)
+	}
+	return fmt.Sprintf("// []%s", s.ElemTypeString)
 }
 
 func (m *MapType) String() string {
-	return fmt.Sprintf("map[%s]%s", m.KeyTypeString, m.ElemTypeString)
+	if m.CommonType.Name != "" {
+		return fmt.Sprintf("type %s map[%s]%s", m.CommonType.Name, m.KeyTypeString, m.ElemTypeString)
+	}
+	return fmt.Sprintf("// map[%s]%s", m.KeyTypeString, m.ElemTypeString)
 }
 
 func (s *StructType) String() string {

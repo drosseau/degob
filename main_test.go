@@ -2,9 +2,10 @@ package degob
 
 import (
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 )
 
@@ -43,6 +44,10 @@ type AllPointers struct {
 	Z *bool
 	Q *interface{}
 }
+
+type UserArray [2]int
+type UserSlice []uint
+type UserMap map[string]interface{}
 
 type degobTestObject struct {
 	fileName string
@@ -602,7 +607,7 @@ var testObjects = []degobTestObject{
 				unpredictableId - 1: &WireType{
 					StructT: &StructType{
 						CommonType: CommonType{
-							Name: "Anon70",
+							Name: "ArrayInner",
 							Id:   int(unpredictableId),
 						},
 						Field: []*FieldType{
@@ -666,7 +671,7 @@ var testObjects = []degobTestObject{
 					interfaceValue{
 						name: "ArrayInner",
 						value: &structValue{
-							name: "Anon70",
+							name: "ArrayInner",
 							fields: map[string]Value{
 								"Float": _float_type(1.2),
 								"Int":   _int_type(1),
@@ -682,6 +687,37 @@ var testObjects = []degobTestObject{
 							},
 						},
 					},
+				},
+			},
+		},
+	},
+	degobTestObject{
+		fileName: "usermap.bin",
+		item: UserMap{
+			"hi":  int64(10),
+			"bye": -10.4,
+		},
+		expected: &Gob{
+			Types: map[typeId]*WireType{
+				unpredictableId: &WireType{
+					MapT: &MapType{
+						CommonType: CommonType{
+							Name: "UserMap",
+							Id:   int(unpredictableId),
+						},
+						Key:            _string_id,
+						KeyTypeString:  "string",
+						Elem:           _interface_id,
+						ElemTypeString: "interface{}",
+					},
+				},
+			},
+			Value: &mapValue{
+				keyType:  "string",
+				elemType: "interface{}",
+				values: map[Value]Value{
+					_string_type("hi"):  interfaceValue{name: "int64", value: _int_type(10)},
+					_string_type("bye"): interfaceValue{name: "float64", value: _float_type(-10.4)},
 				},
 			},
 		},
@@ -753,7 +789,7 @@ func compareGobs(expected *Gob, o *Gob, fname string, t *testing.T) {
 		v := expected.Value
 		ov := o.Value
 		if !v.Equal(ov) {
-			s := fmt.Sprintf("expected Value not found for gob in %s:\n\t%s\nFound value:\n\t%s", fname, v.Display(SingleLine), ov.Display(SingleLine))
+			s := fmt.Sprintf("expected Value not found for gob in %s:\n\t%v\n\t%s\nFound value:\n\t%v\n\t%s", fname, v, v.Display(SingleLine), ov, ov.Display(SingleLine))
 			t.Fatal(s)
 		}
 	}
@@ -881,12 +917,39 @@ func compareStruct(expected *StructType, got *StructType) bool {
 }
 
 func TestMain(m *testing.M) {
+	gob.Register(Inner{})
+	gob.Register(Test{})
+	gob.Register(ArrayInner{})
+	gob.Register(SliceInner{})
+	gob.Register(ElemType{})
+	gob.Register(AllPointers{})
+	gob.Register(KeyType(0))
+	gob.Register(UserArray{})
+	gob.Register([]UserSlice{})
+	gob.Register(UserMap{})
+	gob.Register(map[interface{}]interface{}{})
+	for _, obj := range testObjects {
+		fname := filepath.Join("test_examples", obj.fileName)
+		_, err := os.Stat(fname)
+		if err == nil || !os.IsNotExist(err) {
+			continue
+		}
+		f, err := os.Create(fname)
+		if err != nil {
+			panic(err)
+		}
+		err = gob.NewEncoder(f).Encode(obj.item)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	exitVal := m.Run()
 	os.Exit(exitVal)
 }
 
 func openFileTest(fname string, t *testing.T) *os.File {
-	f, err := os.Open(path.Join("test_examples", fname))
+	f, err := os.Open(filepath.Join("test_examples", fname))
 	if err != nil {
 		t.Fatalf("err: %v opening file: %s", err, fname)
 	}

@@ -147,7 +147,8 @@ func (v mapValue) Equal(o Value) bool {
 		ovtmp, ok := ov.values[k]
 		if !ok {
 			// this could be goofy with interfaces so let's be thorough
-			// TODO: this is probably a hack
+			// TODO: this is probably pointing to some issue with design
+			// in general, but it works for now
 			found := false
 			for ovk, ovtmp := range ov.values {
 				if vtmp.Equal(ovtmp) && k.Equal(ovk) {

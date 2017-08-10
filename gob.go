@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 )
 
 // Gob is a more concrete representation of a gob. It has all of the found
@@ -16,19 +15,15 @@ type Gob struct {
 
 // WriteTypes writes the Gob's types to Writer
 func (g *Gob) WriteTypes(w io.Writer) error {
-	_, err := fmt.Fprintln(w, "// Types:")
-	if err != nil {
-		return err
+	if g.Types == nil {
+		return errors.New("attempted to write nil Types gob's types")
 	}
 	for _, t := range g.Types {
-		s := t.String()
-		if strings.HasPrefix(s, "type struct") {
-			_, err = fmt.Fprintln(w, "// Anonymous struct")
-			if err != nil {
-				return err
-			}
+		_, err := fmt.Fprintf(w, "// type ID: %d\n", t.Id())
+		if err != nil {
+			return err
 		}
-		_, err = fmt.Fprintf(w, "%s\n\n", s)
+		_, err = fmt.Fprintf(w, "%s\n\n", t.String())
 		if err != nil {
 			return err
 		}
@@ -41,10 +36,6 @@ func (g *Gob) WriteValue(w io.Writer, sty style) error {
 	if g.Value == nil {
 		return errors.New("attempted to write nil Value gob")
 	}
-	_, err := fmt.Fprintln(w, "// Values:")
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(w, "%s\n", g.Value.Display(sty))
+	_, err := fmt.Fprintf(w, "%s\n", g.Value.Display(sty))
 	return err
 }

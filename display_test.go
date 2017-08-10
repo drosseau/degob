@@ -12,7 +12,7 @@ func TestDisplayArray(t *testing.T) {
 	v := WireType{
 		ArrayT: &ArrayType{
 			CommonType: CommonType{
-				Name: "Doesn't show",
+				Name: "",
 				Id:   12345,
 			},
 			Elem:           _string_id,
@@ -21,14 +21,18 @@ func TestDisplayArray(t *testing.T) {
 		},
 	}
 	out := v.String()
-	cmp(out, "[10]string", t)
+	cmp(out, "// [10]string", t)
+
+	v.ArrayT.CommonType.Name = "Foo"
+	out = v.String()
+	cmp(out, "type Foo [10]string", t)
 }
 
 func TestDisplaySlice(t *testing.T) {
 	v := WireType{
 		SliceT: &SliceType{
 			CommonType: CommonType{
-				Name: "Doesn't show",
+				Name: "",
 				Id:   12345,
 			},
 			Elem:           _string_id,
@@ -36,7 +40,11 @@ func TestDisplaySlice(t *testing.T) {
 		},
 	}
 	out := v.String()
-	cmp(out, "[]string", t)
+	cmp(out, "// []string", t)
+
+	v.SliceT.CommonType.Name = "Foo"
+	out = v.String()
+	cmp(out, "type Foo []string", t)
 }
 
 func TestDisplayMap(t *testing.T) {
@@ -47,7 +55,11 @@ func TestDisplayMap(t *testing.T) {
 		},
 	}
 	out := w.String()
-	cmp(out, "map[complex128]string", t)
+	cmp(out, "// map[complex128]string", t)
+
+	w.MapT.CommonType.Name = "Foo"
+	out = w.String()
+	cmp(out, "type Foo map[complex128]string", t)
 }
 
 func TestDisplayStruct(t *testing.T) {

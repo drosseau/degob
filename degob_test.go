@@ -16,7 +16,7 @@ func TestDegob(t *testing.T) {
 			t.Fatalf("err: %v decoding gob in file: %s", derr, obj.fileName)
 		}
 		if len(gobs) == 0 {
-			t.Fatal("no error but empty gobs")
+			t.Fatalf("no error but empty gobs for file %s", obj.fileName)
 		}
 		compareGobs(obj.expected, gobs[0], obj.fileName, t)
 	}

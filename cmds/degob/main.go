@@ -17,6 +17,7 @@ var (
 	truncateOut = flag.Bool("trunc", false, "Truncate output file")
 	base64d     = flag.Bool("b64", false, "base64 input")
 	base64urld  = flag.Bool("b64url", false, "base64url input")
+	noComments  = flag.Bool("nc", false, "don't print additional comments")
 )
 
 func errorf(format string, v ...interface{}) {
@@ -71,21 +72,38 @@ func main() {
 		errorf("failed to decode gob: %s\n", err)
 	}
 	for i, g := range gobs {
-		_, err = fmt.Fprintf(out, "// Decoded gob #%d\n\n", i+1)
-		if err != nil {
-			errorf("error writing to output: %v\n", err)
+		if !*noComments {
+			_, err = fmt.Fprintf(out, "// Decoded gob #%d\n\n", i+1)
+			if err != nil {
+				errorf("error writing to output: %v\n", err)
+			}
+		}
+		if !*noComments {
+			_, err := fmt.Fprintln(out, "// Types:")
+			if err != nil {
+				errorf("%v", err)
+			}
 		}
 		err := g.WriteTypes(out)
 		if err != nil {
 			errorf("failed to write types: %s\n", err)
 		}
+
+		if !*noComments {
+			_, err = fmt.Fprintln(out, "// Values:")
+			if err != nil {
+				errorf("%v", err)
+			}
+		}
 		err = g.WriteValue(out, degob.SingleLine)
 		if err != nil {
 			errorf("failed to write value: %s\n", err)
 		}
-		_, err = fmt.Fprintf(out, "\n// End gob #%d\n\n", i+1)
-		if err != nil {
-			errorf("error writing to output: %v\n", err)
+		if !*noComments {
+			_, err = fmt.Fprintf(out, "\n// End gob #%d\n\n", i+1)
+			if err != nil {
+				errorf("error writing to output: %v\n", err)
+			}
 		}
 	}
 }
