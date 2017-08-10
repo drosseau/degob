@@ -18,7 +18,7 @@ Usage of ./degob:
     	Truncate output file
 ```
 
-If you come up with a gob this doesn't work with I wouldn't be surprised but make an issue. (Currently an empty struct (`struct{}`) can cause issues).
+If you come up with a gob this doesn't work with I wouldn't be surprised but make an issue please including the gob hexdump. (Currently an empty struct (`struct{}`) can cause issues).
 
 ### Sample output
 
@@ -52,7 +52,6 @@ type SliceInner struct {
 }
 
 map[interface{}]interface{}{"StringToBool": false,"StringToInt": 12,1234: "IntToString",ArrayInner{Float: 1.2, Int: 1}: SliceInner{Uint: 10, Byte: 4}}
-// Decoded gob #1
 ```
 
 `$ hexdump -C gob.bin`
