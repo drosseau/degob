@@ -188,8 +188,9 @@ func (dec *Decoder) streamError(c chan<- Result, stop <-chan struct{}) bool {
 // Note that we attempt to simply drop any gob that causes an error, but in
 // practice it isn't particularly easy to test that. If you found that
 // you're getting multiple errors in a row it could be easier to just
-// stop the streamer and restart it. If you don't want any buffering
-// just send buffer as 0.
+// stop the streamer and restart it.
+//
+// If you don't want any buffering just send buffer as 0.
 func (dec *Decoder) DecodeStream(stop <-chan struct{}, buffer int) <-chan Result {
 	dec.bytesProcessed = 0
 	dec.clearGob()
@@ -368,9 +369,8 @@ func (dec *Decoder) readValue(id typeId, v *Value) {
 		if !isBuiltin(id) {
 			dec.err = dec.genError(errors.New("unexpected type"))
 			return
-		} else {
-			dec.readBuiltinValue(id, v)
 		}
+		dec.readBuiltinValue(id, v)
 	} else {
 		switch {
 		case wire.StructT != nil:
@@ -450,11 +450,19 @@ func (dec *Decoder) readNonNilInterface(v *Value, nl int) {
 	var into interfaceValue
 	nameB := make([]byte, nl)
 	dec.gobBuf.Read(nameB)
+	// interface names are kinda weird in that they will include
+	// the entire path to the interface type including package.
+	// We don't actually want that
 	into.name = string(nameB)
+	if strings.Contains(into.name, ".") {
+		tmp := strings.Split(into.name, ".")
+		into.name = tmp[len(tmp)-1]
+	}
 	for {
 		id := dec.readTypeId()
 		if id < 0 {
 			dec.readType(-id)
+			dec.getGobPiece()
 		} else {
 			// hmm
 			// TODO: What is this next uint telling me?

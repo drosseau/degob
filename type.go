@@ -143,12 +143,22 @@ func (v mapValue) Equal(o Value) bool {
 	if len(v.values) != len(ov.values) {
 		return false
 	}
-	for k, v := range v.values {
-		ov, ok := ov.values[k]
+	for k, vtmp := range v.values {
+		ovtmp, ok := ov.values[k]
 		if !ok {
-			return false
-		}
-		if !v.Equal(ov) {
+			// this could be goofy with interfaces so let's be thorough
+			// TODO: this is probably a hack
+			found := false
+			for ovk, ovtmp := range ov.values {
+				if vtmp.Equal(ovtmp) && k.Equal(ovk) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+		} else if !vtmp.Equal(ovtmp) {
 			return false
 		}
 	}
@@ -165,6 +175,7 @@ func (s *structValue) Equal(o Value) bool {
 	if !ok {
 		return false
 	}
+
 	if s.name != v.name {
 		return false
 	}

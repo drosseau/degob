@@ -2,9 +2,9 @@ package degob
 
 import (
 	"bytes"
-	"encoding/gob"
 	"fmt"
 	"os"
+	"path"
 	"testing"
 )
 
@@ -44,14 +44,6 @@ type AllPointers struct {
 	Q *interface{}
 }
 
-func openFile(fname string) *os.File {
-	f, err := os.OpenFile(fname, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
-	return f
-}
-
 type degobTestObject struct {
 	fileName string
 	item     interface{}
@@ -63,56 +55,6 @@ const (
 )
 
 var testObjects = []degobTestObject{
-	degobTestObject{
-		fileName: "interfacemap.bin",
-		item: map[interface{}]interface{}{
-			"StringToBool": false,
-			"StringToInt":  12,
-			1234:           "IntToString",
-		},
-		expected: &Gob{
-			Types: map[typeId]*WireType{
-				unpredictableId: &WireType{
-					MapT: &MapType{
-						CommonType: CommonType{
-							Id: int(unpredictableId),
-						},
-						Key:            _interface_id,
-						KeyTypeString:  "interface{}",
-						Elem:           _interface_id,
-						ElemTypeString: "interface{}",
-					},
-				},
-			},
-			Value: &mapValue{
-				keyType:  "interface{}",
-				elemType: "interface{}",
-				values: map[Value]Value{
-					interfaceValue{
-						name:  "string",
-						value: _string_type("StringToBool"),
-					}: interfaceValue{
-						name:  "bool",
-						value: _bool_type(false),
-					},
-					interfaceValue{
-						name:  "string",
-						value: _string_type("StringToInt"),
-					}: interfaceValue{
-						name:  "int",
-						value: _int_type(12),
-					},
-					interfaceValue{
-						name:  "int",
-						value: _int_type(1234),
-					}: interfaceValue{
-						name:  "string",
-						value: _string_type("IntToString"),
-					},
-				},
-			},
-		},
-	},
 	degobTestObject{
 		fileName: "nestedstructfull.bin",
 		item: Test{
@@ -319,7 +261,7 @@ var testObjects = []degobTestObject{
 				unpredictableId - 1: &WireType{
 					StructT: &StructType{
 						CommonType: CommonType{
-							Name: "Anon71",
+							Name: "Anon70",
 							Id:   int(unpredictableId),
 						},
 						Field: []*FieldType{
@@ -330,7 +272,7 @@ var testObjects = []degobTestObject{
 							},
 							&FieldType{
 								Name:       "Int",
-								TypeString: "float64",
+								TypeString: "int64",
 								Id:         int(_int_id),
 							},
 						},
@@ -338,25 +280,25 @@ var testObjects = []degobTestObject{
 				},
 			},
 			Value: &arrayValue{
-				elemType: "Anon71",
+				elemType: "Anon70",
 				length:   3,
 				values: []Value{
 					&structValue{
-						name: "Anon71",
+						name: "Anon70",
 						fields: map[string]Value{
 							"Float": _float_type(1.5),
 							"Int":   _int_type(10),
 						},
 					},
 					&structValue{
-						name: "Anon71",
+						name: "Anon70",
 						fields: map[string]Value{
 							"Float": _float_type(-1.5),
 							"Int":   _int_type(-10),
 						},
 					},
 					&structValue{
-						name: "Anon71",
+						name: "Anon70",
 						fields: map[string]Value{
 							"Float": _float_type(0.0),
 							"Int":   _int_type(0),
@@ -442,7 +384,7 @@ var testObjects = []degobTestObject{
 				unpredictableId - 1: &WireType{
 					StructT: &StructType{
 						CommonType: CommonType{
-							Name: "Anon75",
+							Name: "Anon74",
 							Id:   int(unpredictableId),
 						},
 						Field: []*FieldType{
@@ -460,17 +402,17 @@ var testObjects = []degobTestObject{
 			},
 			Value: &mapValue{
 				keyType:  "complex128",
-				elemType: "Anon75",
+				elemType: "Anon74",
 				values: map[Value]Value{
 					_complex_type(5 - 2.1i): &structValue{
-						name: "Anon75",
+						name: "Anon74",
 						fields: map[string]Value{
 							"Complex": _complex_type(-2 + 3i),
 							"Float":   _float_type(10.2),
 						},
 					},
 					_complex_type(10.2 + 3.5i): &structValue{
-						name: "Anon75",
+						name: "Anon74",
 						fields: map[string]Value{
 							"Complex": _complex_type(2 - 3i),
 							"Float":   _float_type(-10.2),
@@ -631,6 +573,114 @@ var testObjects = []degobTestObject{
 					"Q": interfaceValue{
 						name:  "uint",
 						value: _uint_type(80),
+					},
+				},
+			},
+		},
+	},
+	degobTestObject{
+		fileName: "interfacemap.bin",
+		item: map[interface{}]interface{}{
+			"StringToBool":     false,
+			"StringToInt":      12,
+			1234:               "IntToString",
+			ArrayInner{1.2, 1}: SliceInner{10, 0x04},
+		},
+		expected: &Gob{
+			Types: map[typeId]*WireType{
+				unpredictableId: &WireType{
+					MapT: &MapType{
+						CommonType: CommonType{
+							Id: int(unpredictableId),
+						},
+						Key:            _interface_id,
+						KeyTypeString:  "interface{}",
+						Elem:           _interface_id,
+						ElemTypeString: "interface{}",
+					},
+				},
+				unpredictableId - 1: &WireType{
+					StructT: &StructType{
+						CommonType: CommonType{
+							Name: "Anon70",
+							Id:   int(unpredictableId),
+						},
+						Field: []*FieldType{
+							&FieldType{
+								Name:       "Float",
+								TypeString: "float64",
+								Id:         int(_float_id),
+							},
+							&FieldType{
+								Name:       "Int",
+								TypeString: "float64",
+								Id:         int(_int_id),
+							},
+						},
+					},
+				},
+				unpredictableId - 2: &WireType{
+					StructT: &StructType{
+						CommonType: CommonType{
+							Name: "SliceInner",
+							Id:   int(unpredictableId),
+						},
+						Field: []*FieldType{
+							&FieldType{
+								Name: "Uint",
+								Id:   int(_uint_id),
+							},
+							&FieldType{
+								Name: "Byte",
+								Id:   int(_uint_id),
+							},
+						},
+					},
+				},
+			},
+			Value: &mapValue{
+				keyType:  "interface{}",
+				elemType: "interface{}",
+				values: map[Value]Value{
+					interfaceValue{
+						name:  "string",
+						value: _string_type("StringToBool"),
+					}: interfaceValue{
+						name:  "bool",
+						value: _bool_type(false),
+					},
+					interfaceValue{
+						name:  "string",
+						value: _string_type("StringToInt"),
+					}: interfaceValue{
+						name:  "int",
+						value: _int_type(12),
+					},
+					interfaceValue{
+						name:  "int",
+						value: _int_type(1234),
+					}: interfaceValue{
+						name:  "string",
+						value: _string_type("IntToString"),
+					},
+					interfaceValue{
+						name: "ArrayInner",
+						value: &structValue{
+							name: "Anon70",
+							fields: map[string]Value{
+								"Float": _float_type(1.2),
+								"Int":   _int_type(1),
+							},
+						},
+					}: interfaceValue{
+						name: "SliceInner",
+						value: &structValue{
+							name: "SliceInner",
+							fields: map[string]Value{
+								"Uint": _uint_type(10),
+								"Byte": _uint_type(0x04),
+							},
+						},
 					},
 				},
 			},
@@ -831,40 +881,12 @@ func compareStruct(expected *StructType, got *StructType) bool {
 }
 
 func TestMain(m *testing.M) {
-	var f *os.File
-	var err error
-	gob.Register(Test{})
-	gob.Register(KeyType(0 + 0i))
-	gob.Register(ElemType{})
-	gob.Register(Inner{})
-	gob.Register(SliceInner{})
-	gob.Register(ArrayInner{})
-	gob.Register(AllPointers{})
-	//rand.Seed(0)
-	for _, obj := range testObjects {
-		f = openFile(obj.fileName)
-		err = gob.NewEncoder(f).Encode(obj.item)
-		if err != nil {
-			panic(err)
-		}
-		f.Close()
-	}
-
 	exitVal := m.Run()
-
-	if os.Getenv("DEGOB_TEST_SAVE_BIN") == "" {
-		for _, obj := range testObjects {
-			err = os.Remove(obj.fileName)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
 	os.Exit(exitVal)
 }
 
 func openFileTest(fname string, t *testing.T) *os.File {
-	f, err := os.Open(fname)
+	f, err := os.Open(path.Join("test_examples", fname))
 	if err != nil {
 		t.Fatalf("err: %v opening file: %s", err, fname)
 	}

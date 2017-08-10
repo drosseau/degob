@@ -2,7 +2,6 @@ package degob
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"testing"
 )
@@ -70,11 +69,11 @@ func TestKillGobStream(t *testing.T) {
 }
 
 func TestDuplicateDefinition(t *testing.T) {
-	obj := testObjects[1]
+	obj := testObjects[0]
 	var buf bytes.Buffer
 	fileToBufferTest(obj.fileName, &buf, t)
 	b := buf.Bytes()
-	b[46] = 0x83
+	b[46] = 0x81
 	buf.Reset()
 	_, err := buf.Write(b)
 	if err != nil {
@@ -94,11 +93,11 @@ func TestDuplicateDefinition(t *testing.T) {
 func TestNonEOFErrorStream(t *testing.T) {
 	var buf bytes.Buffer
 	for i, obj := range testObjects {
-		if i == 1 {
+		if i == 0 {
 			var tmpbuf bytes.Buffer
 			fileToBufferTest(obj.fileName, &tmpbuf, t)
 			b := tmpbuf.Bytes()
-			b[46] = 0x83
+			b[46] = 0x81
 			_, err := buf.Write(b)
 			if err != nil {
 				t.Fatal("writing to buffer", err)
@@ -114,7 +113,7 @@ func TestNonEOFErrorStream(t *testing.T) {
 	d := NewDecoder(&buf)
 	i := 0
 	for g := range d.DecodeStream(nil, 0) {
-		if i != 1 {
+		if i != 0 {
 			if g.Err != nil {
 				t.Fatalf("err: %v decoding gob in file: %s", g.Err, testObjects[i].fileName)
 			}
@@ -160,7 +159,6 @@ func TestUnexpectedEOFStream(t *testing.T) {
 	compareGobs(testObjects[0].expected, g.Gob, testObjects[i].fileName, t)
 	g = <-out
 	if g.Err == nil {
-		fmt.Println(g)
 		t.Fatal("expected an error")
 	}
 	if g.Err.Err != io.ErrUnexpectedEOF {
