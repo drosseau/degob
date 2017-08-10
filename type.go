@@ -140,6 +140,9 @@ func (v mapValue) Equal(o Value) bool {
 	if v.elemType != ov.elemType {
 		return false
 	}
+	if len(v.values) != len(ov.values) {
+		return false
+	}
 	for k, v := range v.values {
 		ov, ok := ov.values[k]
 		if !ok {
@@ -254,6 +257,13 @@ func (v _complex_type) Equal(o Value) bool {
 		return false
 	}
 	return v == ov
+}
+
+type _nil_value struct{}
+
+func (v _nil_value) Equal(o Value) bool {
+	_, ok := o.(_nil_value)
+	return ok
 }
 
 type interfaceValue struct {

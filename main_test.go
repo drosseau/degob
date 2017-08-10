@@ -508,6 +508,77 @@ var testObjects = []degobTestObject{
 			Value: _uint_type(0xFFFFFFFFFFFFFFFF),
 		},
 	},
+	degobTestObject{
+		fileName: "booltrue.bin",
+		item:     true,
+		expected: &Gob{
+			Value: _bool_type(true),
+		},
+	},
+	degobTestObject{
+		fileName: "boolfalse.bin",
+		item:     false,
+		expected: &Gob{
+			Value: _bool_type(false),
+		},
+	},
+	degobTestObject{
+		fileName: "interfaceswithnil.bin",
+		item: map[interface{}]interface{}{
+			"StringToBool": false,
+			"StringToInt":  12,
+			1234:           "IntToString",
+			5732:           nil,
+		},
+		expected: &Gob{
+			Types: map[typeId]*WireType{
+				unpredictableId: &WireType{
+					MapT: &MapType{
+						CommonType: CommonType{
+							Id: int(unpredictableId),
+						},
+						Key:            _interface_id,
+						KeyTypeString:  "interface{}",
+						Elem:           _interface_id,
+						ElemTypeString: "interface{}",
+					},
+				},
+			},
+			Value: &mapValue{
+				keyType:  "interface{}",
+				elemType: "interface{}",
+				values: map[Value]Value{
+					interfaceValue{
+						name:  "string",
+						value: _string_type("StringToBool"),
+					}: interfaceValue{
+						name:  "bool",
+						value: _bool_type(false),
+					},
+					interfaceValue{
+						name:  "string",
+						value: _string_type("StringToInt"),
+					}: interfaceValue{
+						name:  "int",
+						value: _int_type(12),
+					},
+					interfaceValue{
+						name:  "int",
+						value: _int_type(1234),
+					}: interfaceValue{
+						name:  "string",
+						value: _string_type("IntToString"),
+					},
+					interfaceValue{
+						name:  "int",
+						value: _int_type(5732),
+					}: interfaceValue{
+						value: _nil_value{},
+					},
+				},
+			},
+		},
+	},
 }
 
 func compareGobs(expected *Gob, o *Gob, fname string, t *testing.T) {
@@ -711,10 +782,12 @@ func TestMain(m *testing.M) {
 
 	exitVal := m.Run()
 
-	for _, obj := range testObjects {
-		err = os.Remove(obj.fileName)
-		if err != nil {
-			panic(err)
+	if os.Getenv("DEGOB_TEST_SAVE_BIN") == "" {
+		for _, obj := range testObjects {
+			err = os.Remove(obj.fileName)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	os.Exit(exitVal)

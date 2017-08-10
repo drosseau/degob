@@ -16,7 +16,7 @@ Usage of ./degob:
     	Truncate output file
 ```
 
-If you come up with a gob this doesn't work with I wouldn't be surprised but make an issue. (Currently a nil interface and an empty struct (`struct{}`) can cause issues).
+If you come up with a gob this doesn't work with I wouldn't be surprised but make an issue. (Currently an empty struct (`struct{}`) can cause issues).
 
 ### Sample output
 

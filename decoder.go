@@ -437,8 +437,10 @@ func (dec *Decoder) readBuiltinValue(id typeId, val *Value) {
 	}
 }
 
-func (dec *Decoder) readNilInterface(v *Value) {
-	panic("not implemented yet")
+func (dec *Decoder) readNilInterface(val *Value) {
+	var into interfaceValue
+	into.value = _nil_value{}
+	*val = into
 }
 
 func (dec *Decoder) readNonNilInterface(v *Value, nl int) {

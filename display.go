@@ -205,3 +205,6 @@ func (v _complex_type) Display(sty style) string {
 func (v interfaceValue) Display(sty style) string {
 	return fmt.Sprintf("%v", v.value.Display(sty))
 }
+func (v _nil_value) Display(sty style) string {
+	return "nil"
+}
