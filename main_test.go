@@ -37,6 +37,13 @@ type ElemType struct {
 	Float   float64
 }
 
+type AllPointers struct {
+	X *int
+	Y *string
+	Z *bool
+	Q *interface{}
+}
+
 func openFile(fname string) *os.File {
 	f, err := os.OpenFile(fname, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
@@ -579,6 +586,68 @@ var testObjects = []degobTestObject{
 			},
 		},
 	},
+	degobTestObject{
+		fileName: "allpointers.bin",
+		item:     newAllPointers(),
+		expected: &Gob{
+			Types: map[typeId]*WireType{
+				unpredictableId: &WireType{
+					StructT: &StructType{
+						CommonType: CommonType{
+							Name: "AllPointers",
+							Id:   int(unpredictableId),
+						},
+						Field: []*FieldType{
+							&FieldType{
+								TypeString: "int64",
+								Id:         int(_int_id),
+								Name:       "X",
+							},
+							&FieldType{
+								TypeString: "string",
+								Id:         int(_string_id),
+								Name:       "Y",
+							},
+							&FieldType{
+								TypeString: "bool",
+								Id:         int(_bool_id),
+								Name:       "Z",
+							},
+							&FieldType{
+								TypeString: "interface{}",
+								Id:         int(_interface_id),
+								Name:       "Q",
+							},
+						},
+					},
+				},
+			},
+			Value: &structValue{
+				name: "AllPointers",
+				fields: map[string]Value{
+					"X": _int_type(10),
+					"Y": _string_type("string pointer"),
+					"Z": _bool_type(true),
+					"Q": interfaceValue{
+						name:  "uint",
+						value: _uint_type(80),
+					},
+				},
+			},
+		},
+	},
+}
+
+func newAllPointers() AllPointers {
+	x := new(int)
+	*x = 10
+	y := new(string)
+	*y = "string pointer"
+	z := new(bool)
+	*z = true
+	q := new(interface{})
+	*q = uint(80)
+	return AllPointers{x, y, z, q}
 }
 
 func compareGobs(expected *Gob, o *Gob, fname string, t *testing.T) {
@@ -770,6 +839,7 @@ func TestMain(m *testing.M) {
 	gob.Register(Inner{})
 	gob.Register(SliceInner{})
 	gob.Register(ArrayInner{})
+	gob.Register(AllPointers{})
 	//rand.Seed(0)
 	for _, obj := range testObjects {
 		f = openFile(obj.fileName)
