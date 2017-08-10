@@ -20,8 +20,8 @@ var (
 	noComments  = flag.Bool("nc", false, "don't print additional comments")
 )
 
-func errorf(format string, v ...interface{}) {
-	_, _ = fmt.Fprintf(os.Stderr, format, v...)
+func errorf(s string, v ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, s, v...)
 	os.Exit(1)
 }
 
@@ -53,6 +53,32 @@ func getReader() io.ReadCloser {
 	return ioutil.NopCloser(os.Stdin)
 }
 
+type writer struct {
+	w   io.Writer
+	err error
+}
+
+func (w writer) writeStr(s string, v ...interface{}) {
+	if w.err != nil {
+		errorf("error writing output: %v\n", w.err)
+	}
+	_, w.err = fmt.Fprintf(w.w, s, v...)
+}
+
+func (w writer) Write(b []byte) (int, error) {
+	if w.err != nil {
+		errorf("error writing output: %v\n", w.err)
+	}
+	return w.w.Write(b)
+}
+
+func (w writer) writeComment(s string, v ...interface{}) {
+	if *noComments {
+		return
+	}
+	w.writeStr(s, v...)
+}
+
 func main() {
 	flag.Parse()
 	out := getWriter()
@@ -66,44 +92,18 @@ func main() {
 		in = ioutil.NopCloser(base64.NewDecoder(base64.URLEncoding, in))
 	}
 
+	w := writer{w: out}
+
 	dec := degob.NewDecoder(in)
 	gobs, err := dec.Decode()
 	if err != nil {
 		errorf("failed to decode gob: %s\n", err)
 	}
 	for i, g := range gobs {
-		if !*noComments {
-			_, err = fmt.Fprintf(out, "// Decoded gob #%d\n\n", i+1)
-			if err != nil {
-				errorf("error writing to output: %v\n", err)
-			}
-		}
-		if !*noComments {
-			_, err := fmt.Fprintln(out, "// Types:")
-			if err != nil {
-				errorf("%v", err)
-			}
-		}
-		err := g.WriteTypes(out)
-		if err != nil {
-			errorf("failed to write types: %s\n", err)
-		}
-
-		if !*noComments {
-			_, err = fmt.Fprintln(out, "// Values:")
-			if err != nil {
-				errorf("%v", err)
-			}
-		}
-		err = g.WriteValue(out, degob.SingleLine)
-		if err != nil {
-			errorf("failed to write value: %s\n", err)
-		}
-		if !*noComments {
-			_, err = fmt.Fprintf(out, "\n// End gob #%d\n\n", i+1)
-			if err != nil {
-				errorf("error writing to output: %v\n", err)
-			}
-		}
+		w.writeComment("// Decoded gob #d\n\n//Types\n", i+1)
+		_ = g.WriteTypes(w)
+		w.writeComment("// Values:")
+		_ = g.WriteValue(w, degob.SingleLine)
+		w.writeComment("\n// End gob %d\n\n", i+1)
 	}
 }
