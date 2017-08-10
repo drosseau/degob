@@ -6,6 +6,8 @@ degob is a reversing tool for `gob`s. If you have the binary form of a gob, but 
 
 The easiest way to use all of this is to just build the binary in `cmds/degob` and send gobs to it either through `stdin` or from files and then get the output to `stdout` or to a file. See its [README](cmds/degob/README.md) for more info.
 
+Setting environmental variable `DEGOB_NORAND=1` will stop the anonymous structs from having that hex suffix. The number stays because that is the type ID defined in the gob. `DEGOB_SEED` sets a specific seed value.
+
 ## Usage
 
 Create a new `Decoder` over your reader using `NewDecoder` and then decode that into a slice of `Gob`s with `Decode` or stream `Gob`s with `DecodeStream`. `DecodeStream` seems fairly stable, but it was difficult to test how it handles all error cases, so be wary of errors. Once you have `Gob`s you can either play with the types directly or just print them out to a writer using the `WriteTypes` and `WriteValues` methods.

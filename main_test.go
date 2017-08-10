@@ -711,14 +711,12 @@ func TestMain(m *testing.M) {
 
 	exitVal := m.Run()
 
-	/*
-		for _, obj := range testObjects {
-			err = os.Remove(obj.fileName)
-			if err != nil {
-				panic(err)
-			}
+	for _, obj := range testObjects {
+		err = os.Remove(obj.fileName)
+		if err != nil {
+			panic(err)
 		}
-	*/
+	}
 	os.Exit(exitVal)
 }
 
