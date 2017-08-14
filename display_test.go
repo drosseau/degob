@@ -139,8 +139,7 @@ func TestDisplayArrayVal(t *testing.T) {
 }
 
 func TestDisplaySliceValue(t *testing.T) {
-	v := arrayValue{
-		length:   2,
+	v := sliceValue{
 		elemType: "[]byte",
 		values: []Value{
 			_bytes_type([]byte{0x30, 0x31}),
@@ -149,7 +148,7 @@ func TestDisplaySliceValue(t *testing.T) {
 	}
 
 	out := v.Display(SingleLine)
-	cmp(out, "[2][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
+	cmp(out, "[][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
 	out = v.Display(CommentedSingleLine)
-	cmp(out, "//[2][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
+	cmp(out, "//[][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
 }
