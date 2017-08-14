@@ -142,11 +142,11 @@ func (v mapValue) getValues(sty style) string {
 	var out string
 	nval := len(v.values)
 	i := 0
-	for k, v := range v.values {
+	for _, v := range v.values {
 		if i < nval-1 {
-			out += fmt.Sprintf("%s: %s,", k.Display(sty), v.Display(sty))
+			out += fmt.Sprintf("%s: %s,", v.key.Display(sty), v.elem.Display(sty))
 		} else {
-			out += fmt.Sprintf("%s: %s", k.Display(sty), v.Display(sty))
+			out += fmt.Sprintf("%s: %s", v.key.Display(sty), v.elem.Display(sty))
 		}
 		i += 1
 	}
@@ -154,7 +154,14 @@ func (v mapValue) getValues(sty style) string {
 }
 
 func (v mapValue) Display(sty style) string {
-	return fmt.Sprintf("map[%s]%s{%s}", v.keyType, v.elemType, v.getValues(sty))
+	switch sty {
+	case CommentedSingleLine:
+		return fmt.Sprintf("//map[%s]%s{%s}", v.keyType, v.elemType, v.getValues(sty))
+	case SingleLine:
+		return fmt.Sprintf("map[%s]%s{%s}", v.keyType, v.elemType, v.getValues(sty))
+	default:
+		panic("unknown style requested")
+	}
 }
 
 func (s *structValue) Display(sty style) string {
@@ -178,8 +185,8 @@ func (s *structValue) getFieldVals(newline bool, sty style) string {
 	var out string
 	nfields := len(s.fields)
 	i := 0
-	for k, v := range s.fields {
-		out += fmt.Sprintf("%s: %s", k, v.Display(sty))
+	for _, v := range s.fields {
+		out += fmt.Sprintf("%s: %s", v.name, v.value.Display(sty))
 		if i < nfields-1 {
 			if newline {
 				out += ",\n"

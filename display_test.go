@@ -85,19 +85,71 @@ func TestDisplayStruct(t *testing.T) {
 	cmp(out, expected, t)
 }
 
-// since these are a map the order isn't deterministic so this
-// can fail
-/*
 func TestDisplayStructVal(t *testing.T) {
 	v := structValue{
-		name: "Foo",
-		fields: map[string]Value{
-			"Complex": _complex_type(1 + 2i),
-			"String":  _string_type("1 + 2i"),
+		name:   "Foo",
+		sorted: true,
+		fields: structFields{
+			structField{name: "Complex", value: _complex_type(1 + 2i)},
+			structField{name: "String", value: _string_type("1 + 2i")},
 		},
 	}
 
 	out := v.Display(SingleLine)
 	cmp(out, "Foo{Complex: (1+2i), String: \"1 + 2i\"}", t)
+	out = v.Display(CommentedSingleLine)
+	cmp(out, "//Foo{Complex: (1+2i), String: \"1 + 2i\"}", t)
 }
-*/
+
+func TestDisplayMapVal(t *testing.T) {
+	v := mapValue{
+		keyType:  "string",
+		elemType: "int64",
+		values: []mapEntry{
+			mapEntry{
+				key:  _string_type("foo"),
+				elem: _int_type(12),
+			},
+			mapEntry{
+				key:  _string_type("bar"),
+				elem: _int_type(-10),
+			},
+		},
+	}
+	out := v.Display(SingleLine)
+	cmp(out, "map[string]int64{\"foo\": 12,\"bar\": -10}", t)
+	out = v.Display(CommentedSingleLine)
+	cmp(out, "//map[string]int64{\"foo\": 12,\"bar\": -10}", t)
+}
+
+func TestDisplayArrayVal(t *testing.T) {
+	v := arrayValue{
+		length:   2,
+		elemType: "string",
+		values: []Value{
+			_string_type("one"),
+			_string_type("two"),
+		},
+	}
+
+	out := v.Display(SingleLine)
+	cmp(out, "[2]string{\"one\", \"two\"}", t)
+	out = v.Display(CommentedSingleLine)
+	cmp(out, "//[2]string{\"one\", \"two\"}", t)
+}
+
+func TestDisplaySliceValue(t *testing.T) {
+	v := arrayValue{
+		length:   2,
+		elemType: "[]byte",
+		values: []Value{
+			_bytes_type([]byte{0x30, 0x31}),
+			_bytes_type([]byte{0x32, 0x33, 0x34}),
+		},
+	}
+
+	out := v.Display(SingleLine)
+	cmp(out, "[2][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
+	out = v.Display(CommentedSingleLine)
+	cmp(out, "//[2][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
+}
