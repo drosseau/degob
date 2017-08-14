@@ -1,5 +1,7 @@
 package degob
 
+import "sort"
+
 // WireType is basically the same as the `encoding/gob` wiretype with a few
 // fields added and exported. It is also a `Stringer` so the types can be
 // printed for better viewing.
@@ -90,6 +92,9 @@ func (v sliceValue) Equal(o Value) bool {
 	if !ok {
 		return false
 	}
+	if v.elemType != ov.elemType {
+		return false
+	}
 	if len(v.values) != len(ov.values) {
 		return false
 	}
@@ -112,6 +117,10 @@ func (v arrayValue) Equal(o Value) bool {
 	if !ok {
 		return false
 	}
+
+	if v.elemType != ov.elemType {
+		return false
+	}
 	if v.length != ov.length {
 		return false
 	}
@@ -123,10 +132,15 @@ func (v arrayValue) Equal(o Value) bool {
 	return true
 }
 
+type mapEntry struct {
+	key  Value
+	elem Value
+}
+
 type mapValue struct {
 	keyType  string
 	elemType string
-	values   map[Value]Value
+	values   []mapEntry
 }
 
 func (v mapValue) Equal(o Value) bool {
@@ -143,32 +157,41 @@ func (v mapValue) Equal(o Value) bool {
 	if len(v.values) != len(ov.values) {
 		return false
 	}
-	for k, vtmp := range v.values {
-		ovtmp, ok := ov.values[k]
-		if !ok {
-			// this could be goofy with interfaces so let's be thorough
-			// TODO: this is probably pointing to some issue with design
-			// in general, but it works for now
-			found := false
-			for ovk, ovtmp := range ov.values {
-				if vtmp.Equal(ovtmp) && k.Equal(ovk) {
-					found = true
-					break
-				}
+	// TODO: At some point it'd be nice to sort `values` for each one to make
+	// this comparison more efficient. The problem is how I would define `Less`
+	// for Values that aren't the same type. I'd probably have to resort
+	// to comparing TypeIds but then I'd have to give each Value a TypeId method
+	// so I'm saving it for some other time.
+	for _, vval := range v.values {
+		found := false
+		for _, ovval := range ov.values {
+			if vval.key.Equal(ovval.key) && vval.elem.Equal(ovval.elem) {
+				found = true
+				break
 			}
-			if !found {
-				return false
-			}
-		} else if !vtmp.Equal(ovtmp) {
+		}
+		if !found {
 			return false
 		}
 	}
 	return true
 }
 
+type structField struct {
+	name  string
+	value Value
+}
+
+type structFields []structField
+
+func (s structFields) Len() int           { return len(s) }
+func (s structFields) Less(i, j int) bool { return s[i].name < s[j].name }
+func (s structFields) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
 type structValue struct {
 	name   string
-	fields map[string]Value
+	sorted bool
+	fields structFields
 }
 
 func (s *structValue) Equal(o Value) bool {
@@ -180,12 +203,27 @@ func (s *structValue) Equal(o Value) bool {
 	if s.name != v.name {
 		return false
 	}
-	for k, val := range s.fields {
-		ov, ok := v.fields[k]
-		if !ok {
+
+	if len(s.fields) != len(v.fields) {
+		return false
+	}
+
+	if !s.sorted {
+		sort.Sort(s.fields)
+		s.sorted = true
+	}
+	if !v.sorted {
+		sort.Sort(v.fields)
+		v.sorted = true
+	}
+
+	for fno := range s.fields {
+		sf := s.fields[fno]
+		vf := v.fields[fno]
+		if sf.name != vf.name {
 			return false
 		}
-		if !val.Equal(ov) {
+		if !sf.value.Equal(vf.value) {
 			return false
 		}
 	}

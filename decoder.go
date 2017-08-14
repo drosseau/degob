@@ -320,10 +320,19 @@ func (dec *Decoder) valueForWireType(w *WireType) Value {
 	case w.StructT != nil:
 		v := new(structValue)
 		v.name = w.StructT.CommonType.Name
-		v.fields = make(map[string]Value)
-		for _, f := range w.StructT.Field {
-			v.fields[f.Name] = dec.valueForType(typeId(f.Id))
+		//v.fields = make(map[string]Value)
+		v.fields = make(structFields, len(w.StructT.Field))
+		for i, f := range w.StructT.Field {
+			v.fields[i] = structField{
+				name:  f.Name,
+				value: dec.valueForType(typeId(f.Id)),
+			}
 		}
+		/*
+			for _, f := range w.StructT.Field {
+				v.fields[f.Name] = dec.valueForType(typeId(f.Id))
+			}
+		*/
 		return v
 	case w.SliceT != nil:
 		v := new(sliceValue)
@@ -342,7 +351,7 @@ func (dec *Decoder) valueForWireType(w *WireType) Value {
 		v := new(mapValue)
 		v.keyType = dec.getName(w.MapT.Key)
 		v.elemType = dec.getName(w.MapT.Elem)
-		v.values = make(map[Value]Value)
+		//v.values = make(map[Value]Value)
 		return v
 	default:
 		panic("all nil in wiretype")
@@ -485,12 +494,14 @@ func (dec *Decoder) readMapValue(wire *WireType, val *Value) {
 	}
 	into := dec.valueForWireType(wire).(*mapValue)
 	length := int(dec.nextUint())
+	into.values = make([]mapEntry, length)
 	for i := 0; i < length; i++ {
 		kVal := new(Value)
 		eVal := new(Value)
 		dec.readValue(wire.MapT.Key, kVal)
 		dec.readValue(wire.MapT.Elem, eVal)
-		into.values[*kVal] = *eVal
+		into.values[i] = mapEntry{key: *kVal, elem: *eVal}
+		//into.values[*kVal] = *eVal
 	}
 	*val = into
 }
@@ -543,7 +554,8 @@ func (dec *Decoder) readStructValue(wire *WireType, val *Value) {
 			v = valueFor(id)
 		}
 		dec.readValue(id, &v)
-		into.fields[fields[fieldNum].Name] = v
+		into.fields[fieldNum].value = v
+		//into.fields[fields[fieldNum].Name] = v
 	}
 	*val = into
 }

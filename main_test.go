@@ -75,18 +75,21 @@ var testObjects = []degobTestObject{
 		expected: &Gob{
 			Value: &structValue{
 				name: "Test",
-				fields: map[string]Value{
-					"W": &structValue{
-						name: "Inner",
-						fields: map[string]Value{
-							"A": _float_type(3.14),
-							"B": _complex_type(5 + 3i),
-							"C": _bytes_type([]byte{1, 2, 3, 4, 5}),
+				fields: structFields{
+					structField{
+						name: "W",
+						value: &structValue{
+							name: "Inner",
+							fields: structFields{
+								structField{name: "A", value: _float_type(3.14)},
+								structField{name: "B", value: _complex_type(5 + 3i)},
+								structField{name: "C", value: _bytes_type([]byte{1, 2, 3, 4, 5})},
+							},
 						},
 					},
-					"X": _int_type(-10),
-					"Y": _uint_type(10),
-					"Z": _string_type("Hello"),
+					structField{name: "X", value: _int_type(-10)},
+					structField{name: "Y", value: _uint_type(10)},
+					structField{name: "Z", value: _string_type("Hello")},
 				},
 			},
 			Types: map[typeId]*WireType{
@@ -126,11 +129,21 @@ var testObjects = []degobTestObject{
 		expected: &Gob{
 			Value: &structValue{
 				name: "Test",
-				fields: map[string]Value{
-					"W": &structValue{
-						name:   "Inner",
-						fields: nil,
+				fields: structFields{
+					structField{
+						name: "W",
+						value: &structValue{
+							name: "Inner",
+							fields: structFields{
+								structField{name: "A", value: _float_type(0)},
+								structField{name: "B", value: _complex_type(0)},
+								structField{name: "C", value: _bytes_type([]byte{})},
+							},
+						},
 					},
+					structField{name: "X", value: _int_type(0)},
+					structField{name: "Y", value: _uint_type(0)},
+					structField{name: "Z", value: _string_type("")},
 				},
 			},
 			Types: map[typeId]*WireType{
@@ -239,9 +252,15 @@ var testObjects = []degobTestObject{
 			Value: &mapValue{
 				keyType:  _string_id.name(),
 				elemType: _float_id.name(),
-				values: map[Value]Value{
-					_string_type("one point two"):           _float_type(1.2),
-					_string_type("negative ten point five"): _float_type(-10.5),
+				values: []mapEntry{
+					mapEntry{
+						key:  _string_type("one point two"),
+						elem: _float_type(1.2),
+					},
+					mapEntry{
+						key:  _string_type("negative ten point five"),
+						elem: _float_type(-10.5),
+					},
 				},
 			},
 		},
@@ -290,23 +309,23 @@ var testObjects = []degobTestObject{
 				values: []Value{
 					&structValue{
 						name: "Anon70",
-						fields: map[string]Value{
-							"Float": _float_type(1.5),
-							"Int":   _int_type(10),
+						fields: structFields{
+							structField{name: "Float", value: _float_type(1.5)},
+							structField{name: "Int", value: _int_type(10)},
 						},
 					},
 					&structValue{
 						name: "Anon70",
-						fields: map[string]Value{
-							"Float": _float_type(-1.5),
-							"Int":   _int_type(-10),
+						fields: structFields{
+							structField{name: "Float", value: _float_type(-1.5)},
+							structField{name: "Int", value: _int_type(-10)},
 						},
 					},
 					&structValue{
 						name: "Anon70",
-						fields: map[string]Value{
-							"Float": _float_type(0.0),
-							"Int":   _int_type(0),
+						fields: structFields{
+							structField{name: "Float", value: _float_type(0.0)},
+							structField{name: "Int", value: _int_type(0)},
 						},
 					},
 				},
@@ -353,16 +372,16 @@ var testObjects = []degobTestObject{
 				values: []Value{
 					&structValue{
 						name: "SliceInner",
-						fields: map[string]Value{
-							"Uint": _uint_type(0),
-							"Byte": _uint_type(0x30),
+						fields: structFields{
+							structField{name: "Uint", value: _uint_type(0)},
+							structField{name: "Byte", value: _uint_type(0x30)},
 						},
 					},
 					&structValue{
 						name: "SliceInner",
-						fields: map[string]Value{
-							"Uint": _uint_type(5),
-							"Byte": _uint_type(0x35),
+						fields: structFields{
+							structField{name: "Uint", value: _uint_type(5)},
+							structField{name: "Byte", value: _uint_type(0x35)},
 						},
 					},
 				},
@@ -408,19 +427,25 @@ var testObjects = []degobTestObject{
 			Value: &mapValue{
 				keyType:  "complex128",
 				elemType: "Anon74",
-				values: map[Value]Value{
-					_complex_type(5 - 2.1i): &structValue{
-						name: "Anon74",
-						fields: map[string]Value{
-							"Complex": _complex_type(-2 + 3i),
-							"Float":   _float_type(10.2),
+				values: []mapEntry{
+					mapEntry{
+						key: _complex_type(5 - 2.1i),
+						elem: &structValue{
+							name: "Anon74",
+							fields: structFields{
+								structField{name: "Complex", value: _complex_type(-2 + 3i)},
+								structField{name: "Float", value: _float_type(10.2)},
+							},
 						},
 					},
-					_complex_type(10.2 + 3.5i): &structValue{
-						name: "Anon74",
-						fields: map[string]Value{
-							"Complex": _complex_type(2 - 3i),
-							"Float":   _float_type(-10.2),
+					mapEntry{
+						key: _complex_type(10.2 + 3.5i),
+						elem: &structValue{
+							name: "Anon74",
+							fields: structFields{
+								structField{name: "Complex", value: _complex_type(2 - 3i)},
+								structField{name: "Float", value: _float_type(-10.2)},
+							},
 						},
 					},
 				},
@@ -501,33 +526,45 @@ var testObjects = []degobTestObject{
 			Value: &mapValue{
 				keyType:  "interface{}",
 				elemType: "interface{}",
-				values: map[Value]Value{
-					interfaceValue{
-						name:  "string",
-						value: _string_type("StringToBool"),
-					}: interfaceValue{
-						name:  "bool",
-						value: _bool_type(false),
+				values: []mapEntry{
+					mapEntry{
+						key: interfaceValue{
+							name:  "string",
+							value: _string_type("StringToBool"),
+						},
+						elem: interfaceValue{
+							name:  "bool",
+							value: _bool_type(false),
+						},
 					},
-					interfaceValue{
-						name:  "string",
-						value: _string_type("StringToInt"),
-					}: interfaceValue{
-						name:  "int",
-						value: _int_type(12),
+					mapEntry{
+						key: interfaceValue{
+							name:  "string",
+							value: _string_type("StringToInt"),
+						},
+						elem: interfaceValue{
+							name:  "int",
+							value: _int_type(12),
+						},
 					},
-					interfaceValue{
-						name:  "int",
-						value: _int_type(1234),
-					}: interfaceValue{
-						name:  "string",
-						value: _string_type("IntToString"),
+					mapEntry{
+						key: interfaceValue{
+							name:  "int",
+							value: _int_type(1234),
+						},
+						elem: interfaceValue{
+							name:  "string",
+							value: _string_type("IntToString"),
+						},
 					},
-					interfaceValue{
-						name:  "int",
-						value: _int_type(5732),
-					}: interfaceValue{
-						value: _nil_value{},
+					mapEntry{
+						key: interfaceValue{
+							name:  "int",
+							value: _int_type(5732),
+						},
+						elem: interfaceValue{
+							value: _nil_value{},
+						},
 					},
 				},
 			},
@@ -571,13 +608,16 @@ var testObjects = []degobTestObject{
 			},
 			Value: &structValue{
 				name: "AllPointers",
-				fields: map[string]Value{
-					"X": _int_type(10),
-					"Y": _string_type("string pointer"),
-					"Z": _bool_type(true),
-					"Q": interfaceValue{
-						name:  "uint",
-						value: _uint_type(80),
+				fields: structFields{
+					structField{name: "X", value: _int_type(10)},
+					structField{name: "Y", value: _string_type("string pointer")},
+					structField{name: "Z", value: _bool_type(true)},
+					structField{
+						name: "Q",
+						value: interfaceValue{
+							name:  "uint",
+							value: _uint_type(80),
+						},
 					},
 				},
 			},
@@ -646,44 +686,56 @@ var testObjects = []degobTestObject{
 			Value: &mapValue{
 				keyType:  "interface{}",
 				elemType: "interface{}",
-				values: map[Value]Value{
-					interfaceValue{
-						name:  "string",
-						value: _string_type("StringToBool"),
-					}: interfaceValue{
-						name:  "bool",
-						value: _bool_type(false),
+				values: []mapEntry{
+					mapEntry{
+						key: interfaceValue{
+							name:  "string",
+							value: _string_type("StringToBool"),
+						},
+						elem: interfaceValue{
+							name:  "bool",
+							value: _bool_type(false),
+						},
 					},
-					interfaceValue{
-						name:  "string",
-						value: _string_type("StringToInt"),
-					}: interfaceValue{
-						name:  "int",
-						value: _int_type(12),
+					mapEntry{
+						key: interfaceValue{
+							name:  "string",
+							value: _string_type("StringToInt"),
+						},
+						elem: interfaceValue{
+							name:  "int",
+							value: _int_type(12),
+						},
 					},
-					interfaceValue{
-						name:  "int",
-						value: _int_type(1234),
-					}: interfaceValue{
-						name:  "string",
-						value: _string_type("IntToString"),
+					mapEntry{
+						key: interfaceValue{
+							name:  "int",
+							value: _int_type(1234),
+						},
+						elem: interfaceValue{
+							name:  "string",
+							value: _string_type("IntToString"),
+						},
 					},
-					interfaceValue{
-						name: "ArrayInner",
-						value: &structValue{
+					mapEntry{
+						key: interfaceValue{
 							name: "ArrayInner",
-							fields: map[string]Value{
-								"Float": _float_type(1.2),
-								"Int":   _int_type(1),
+							value: &structValue{
+								name: "ArrayInner",
+								fields: structFields{
+									structField{name: "Float", value: _float_type(1.2)},
+									structField{name: "Int", value: _int_type(1)},
+								},
 							},
 						},
-					}: interfaceValue{
-						name: "SliceInner",
-						value: &structValue{
+						elem: interfaceValue{
 							name: "SliceInner",
-							fields: map[string]Value{
-								"Uint": _uint_type(10),
-								"Byte": _uint_type(0x04),
+							value: &structValue{
+								name: "SliceInner",
+								fields: structFields{
+									structField{name: "Uint", value: _uint_type(10)},
+									structField{name: "Byte", value: _uint_type(0x04)},
+								},
 							},
 						},
 					},
@@ -715,9 +767,15 @@ var testObjects = []degobTestObject{
 			Value: &mapValue{
 				keyType:  "string",
 				elemType: "interface{}",
-				values: map[Value]Value{
-					_string_type("hi"):  interfaceValue{name: "int64", value: _int_type(10)},
-					_string_type("bye"): interfaceValue{name: "float64", value: _float_type(-10.4)},
+				values: []mapEntry{
+					mapEntry{
+						key:  _string_type("hi"),
+						elem: interfaceValue{name: "int64", value: _int_type(10)},
+					},
+					mapEntry{
+						key:  _string_type("bye"),
+						elem: interfaceValue{name: "float64", value: _float_type(-10.4)},
+					},
 				},
 			},
 		},
