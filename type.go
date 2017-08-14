@@ -291,10 +291,7 @@ func (v interfaceValue) Equal(o Value) bool {
 	if v.name != ov.name {
 		return false
 	}
-	eq := v.value.Equal(ov.value)
-	if !eq {
-	}
-	return eq
+	return v.value.Equal(ov.value)
 }
 
 func valueFor(id typeId) Value {
