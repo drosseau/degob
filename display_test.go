@@ -99,6 +99,8 @@ func TestDisplayStructVal(t *testing.T) {
 	cmp(out, "Foo{Complex: (1+2i), String: \"1 + 2i\"}", t)
 	out = v.Display(CommentedSingleLine)
 	cmp(out, "//Foo{Complex: (1+2i), String: \"1 + 2i\"}", t)
+	out = v.Display(JSON)
+	cmp(out, `{"Complex": {"Re": 1.000000, "Im": 2.000000}, "String": "1 + 2i"}`, t)
 }
 
 func TestDisplayMapVal(t *testing.T) {
@@ -120,6 +122,8 @@ func TestDisplayMapVal(t *testing.T) {
 	cmp(out, "map[string]int64{\"foo\": 12,\"bar\": -10}", t)
 	out = v.Display(CommentedSingleLine)
 	cmp(out, "//map[string]int64{\"foo\": 12,\"bar\": -10}", t)
+	out = v.Display(JSON)
+	cmp(out, `{"foo": 12, "bar": -10}`, t)
 }
 
 func TestDisplayArrayVal(t *testing.T) {
@@ -136,6 +140,8 @@ func TestDisplayArrayVal(t *testing.T) {
 	cmp(out, "[2]string{\"one\", \"two\"}", t)
 	out = v.Display(CommentedSingleLine)
 	cmp(out, "//[2]string{\"one\", \"two\"}", t)
+	out = v.Display(JSON)
+	cmp(out, `["one", "two"]`, t)
 }
 
 func TestDisplaySliceValue(t *testing.T) {
@@ -151,4 +157,72 @@ func TestDisplaySliceValue(t *testing.T) {
 	cmp(out, "[][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
 	out = v.Display(CommentedSingleLine)
 	cmp(out, "//[][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
+	out = v.Display(JSON)
+	cmp(out, `[[0x30, 0x31], [0x32, 0x33, 0x34]]`, t)
+}
+
+func TestDisplayComplexStruct(t *testing.T) {
+	v := structValue{
+		name:   "Foo",
+		sorted: true,
+		fields: structFields{
+			structField{
+				name: "Inner",
+				value: &structValue{
+					sorted: true,
+					name:   "Bar",
+					fields: structFields{
+						structField{
+							name: "Array",
+							value: arrayValue{
+								length:   2,
+								elemType: "Baz",
+								values: []Value{
+									&structValue{
+										name:   "Baz",
+										sorted: true,
+										fields: structFields{
+											structField{
+												name:  "BazVal",
+												value: _float_type(10.2),
+											},
+										},
+									},
+									&structValue{
+										name:   "Baz",
+										sorted: true,
+										fields: structFields{
+											structField{
+												name:  "BazVal",
+												value: _float_type(-10.2),
+											},
+										},
+									},
+								},
+							},
+						},
+						structField{
+							name: "Map",
+							value: mapValue{
+								keyType:  "string",
+								elemType: "int64",
+								values: []mapEntry{
+									mapEntry{
+										key:  _string_type("ten"),
+										elem: _int_type(10),
+									},
+									mapEntry{
+										key:  _string_type("negative two"),
+										elem: _int_type(-2),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	out := v.Display(JSON)
+	cmp(out, `{"Inner": {"Array": [{"BazVal": 10.2}, {"BazVal": -10.2}], "Map": {"ten": 10, "negative two": -2}}}`, t)
 }

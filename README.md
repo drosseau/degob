@@ -27,5 +27,5 @@ There are a few limitations that I can't really get around.
 ## TODO
 
 - Printing stylized output
-- Some more testing (I'm around ~70%)
+- Some more testing (I'm around ~80%)
 - Include more "bad gob" tests, but to be honest this tool shouldn't be seeing very many bad gobs. It isn't really meant to be doing much validating, so this is pretty low priority, and part of the reason I'm OK with some of the panics and lack of testing around bad gobs.

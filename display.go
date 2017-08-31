@@ -17,8 +17,14 @@ const (
 	// you'd like to stream Gobs to create a file of discovered types but don't
 	// want to ignore values
 	CommentedSingleLine
-	// JSON tells the Value to format its display as JSON
-	//JSON
+	//JSON tells the Value to format its display as JSON
+	//
+	// There are not always perfect mappings from Go types to JSON. Two examples
+	// are maps that don't have string keys and complex numbers. Complex numbers
+	// are displayed as a JSON object `{"Re": real(x), "Im": imag(x)}`. Non
+	// string key maps are returned as an error object that looks like:
+	// `{"error": STRING, "val": "SingleLine displayed val"}`.
+	JSON
 )
 
 func (w *WireType) String() string {
@@ -96,8 +102,8 @@ func (v sliceValue) valuesSep(sty style, sep string) string {
 
 func (v sliceValue) Display(sty style) string {
 	switch sty {
-	//case JSON:
-	//	return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
+	case JSON:
+		return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
 	case SingleLine:
 		return fmt.Sprintf("[]%s{%s}", v.elemType, v.valuesSep(SingleLine, ", "))
 	case CommentedSingleLine:
@@ -117,8 +123,8 @@ func (v arrayValue) valuesSep(sty style, sep string) string {
 
 func (v arrayValue) Display(sty style) string {
 	switch sty {
-	//case JSON:
-	//return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
+	case JSON:
+		return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
 	case SingleLine:
 		return fmt.Sprintf("[%d]%s{%s}", v.length, v.elemType, v.valuesSep(SingleLine, ", "))
 	case CommentedSingleLine:
@@ -155,6 +161,8 @@ func (v mapValue) getValues(sty style) string {
 
 func (v mapValue) Display(sty style) string {
 	switch sty {
+	case JSON:
+		return v.displayJSON()
 	case CommentedSingleLine:
 		return fmt.Sprintf("//map[%s]%s{%s}", v.keyType, v.elemType, v.getValues(sty))
 	case SingleLine:
@@ -164,14 +172,33 @@ func (v mapValue) Display(sty style) string {
 	}
 }
 
+func (v mapValue) displayJSON() string {
+	if v.keyType != "string" {
+		return `{
+	"error": "cannot display map type with non key strings as JSON"
+	"val": "` + v.Display(SingleLine) + `"
+}`
+	}
+	s := "{"
+	end := len(v.values)
+	for i, v := range v.values {
+		s += fmt.Sprintf("%s: %s", v.key.Display(JSON), v.elem.Display(JSON))
+		if i+1 < end {
+			s += ", "
+		}
+	}
+	s += "}"
+	return s
+}
+
 func (s *structValue) Display(sty style) string {
 	switch sty {
 	case CommentedSingleLine:
 		return s.commentedSingleLine()
 	case SingleLine:
 		return s.singleLine()
-	//case JSON:
-	//		return s.json()
+	case JSON:
+		return s.json()
 	default:
 		panic("unknown style requested")
 	}
@@ -208,7 +235,16 @@ func (s *structValue) singleLine() string {
 }
 
 func (s *structValue) json() string {
-	panic("not implemented")
+	str := "{"
+	end := len(s.fields)
+	for i, v := range s.fields {
+		str += fmt.Sprintf("\"%s\": %s", v.name, v.value.Display(JSON))
+		if i+1 < end {
+			str += ", "
+		}
+	}
+	str += "}"
+	return str
 }
 
 // Base types
@@ -226,12 +262,19 @@ func (v _float_type) Display(sty style) string {
 	return fmt.Sprintf("%v", float64(v))
 }
 func (v _bytes_type) Display(sty style) string {
+	if sty == JSON {
+		s := fmt.Sprintf("[% #02x]", v)
+		return strings.Join(strings.Split(s, " "), ", ")
+	}
 	return fmt.Sprintf("%#v", []byte(v))
 }
 func (v _string_type) Display(sty style) string {
 	return fmt.Sprintf("\"%v\"", string(v))
 }
 func (v _complex_type) Display(sty style) string {
+	if sty == JSON {
+		return fmt.Sprintf(`{"Re": %f, "Im": %f}`, real(v), imag(v))
+	}
 	return fmt.Sprintf("%#v", complex128(v))
 }
 func (v interfaceValue) Display(sty style) string {
