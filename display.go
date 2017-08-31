@@ -175,7 +175,7 @@ func (v mapValue) Display(sty style) string {
 func (v mapValue) displayJSON() string {
 	if v.keyType != "string" {
 		return `{
-	"error": "cannot display map type with non key strings as JSON"
+	"error": "cannot display map type with non key strings as JSON",
 	"val": "` + v.Display(SingleLine) + `"
 }`
 	}
