@@ -174,10 +174,10 @@ func (v mapValue) Display(sty style) string {
 
 func (v mapValue) displayJSON() string {
 	if v.keyType != "string" {
-		return `{
+		return fmt.Sprintf(`{
 	"error": "cannot display map type with non key strings as JSON",
-	"val": "` + v.Display(SingleLine) + `"
-}`
+	"val": %q
+}`, v.Display(SingleLine))
 	}
 	s := "{"
 	end := len(v.values)
