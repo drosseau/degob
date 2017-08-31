@@ -158,7 +158,7 @@ func TestDisplaySliceValue(t *testing.T) {
 	out = v.Display(CommentedSingleLine)
 	cmp(out, "//[][]byte{[]byte{0x30, 0x31}, []byte{0x32, 0x33, 0x34}}", t)
 	out = v.Display(JSON)
-	cmp(out, `[[0x30, 0x31], [0x32, 0x33, 0x34]]`, t)
+	cmp(out, `[[48, 49], [50, 51, 52]]`, t)
 }
 
 func TestDisplayComplexStruct(t *testing.T) {

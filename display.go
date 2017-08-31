@@ -263,7 +263,7 @@ func (v _float_type) Display(sty style) string {
 }
 func (v _bytes_type) Display(sty style) string {
 	if sty == JSON {
-		s := fmt.Sprintf("[% #02x]", v)
+		s := fmt.Sprintf("%d", v)
 		return strings.Join(strings.Split(s, " "), ", ")
 	}
 	return fmt.Sprintf("%#v", []byte(v))
