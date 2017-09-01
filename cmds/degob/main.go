@@ -18,6 +18,8 @@ var (
 	base64d     = flag.Bool("b64", false, "base64 input")
 	base64urld  = flag.Bool("b64url", false, "base64url input")
 	noComments  = flag.Bool("nc", false, "don't print additional comments")
+	noTypes     = flag.Bool("nt", false, "don't print type information")
+	json        = flag.Bool("json", false, "show value as json")
 )
 
 func errorf(s string, v ...interface{}) {
@@ -68,11 +70,11 @@ func (w writer) Write(b []byte) (int, error) {
 }
 
 func (w writer) writeComment(s string, v ...interface{}) {
-	if w.err != nil {
-		errorf("error writing output: %v\n", w.err)
-	}
 	if *noComments {
 		return
+	}
+	if w.err != nil {
+		errorf("error writing output: %v\n", w.err)
 	}
 	_, w.err = fmt.Fprintf(w.w, s, v...)
 }
@@ -99,12 +101,18 @@ func main() {
 	}
 	for i, g := range gobs {
 		w.writeComment("// Decoded gob %d\n\n//Types\n", i+1)
-		err := g.WriteTypes(w)
-		if err != nil {
-			errorf("error writing types: %v\n", err)
+		if !*noTypes {
+			err = g.WriteTypes(w)
+			if err != nil {
+				errorf("error writing types: %v\n", err)
+			}
 		}
 		w.writeComment("// Values:")
-		err = g.WriteValue(w, degob.SingleLine)
+		if *json {
+			err = g.WriteValue(w, degob.JSON)
+		} else {
+			err = g.WriteValue(w, degob.SingleLine)
+		}
 		if err != nil {
 			errorf("error writing values: %v\n", err)
 		}

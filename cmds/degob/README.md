@@ -3,20 +3,26 @@
 Simple command line too for degobbing.
 
 ```
-Usage of ./degob:
+Usage of degob:
   -b64
-    	base64 input
+      base64 input
   -b64url
-    	base64url input
+      base64url input
   -ifile string
-    	Input file (defaults to stdin)
+      Input file (defaults to stdin)
+  -json
+      show value as json
   -nc
       don't print additional comments
+  -nt
+      don't print type information
   -ofile string
-    	Output file (defaults to stdout)
+      Output file (defaults to stdout)
   -trunc
-    	Truncate output file
+      Truncate output file
 ```
+
+If the Gob defines a map type that doesn't have string keys and you attempt to print it with JSON it will instead print a JSON that contains an `error` and `val` key. The `val` key is the typical output. Complex numbers are represented as objects with `Re` and `Im` keys for the real and imaginary pats.
 
 If you come up with a gob this doesn't work with I wouldn't be surprised but make an issue please including the gob hexdump. (Currently an empty struct (`struct{}`) can cause issues).
 
