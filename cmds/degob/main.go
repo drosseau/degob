@@ -108,14 +108,15 @@ func main() {
 		w.writeStr("package %s\n\n", *pkgName)
 	}
 	for i, g := range gobs {
-		w.writeComment("// Decoded gob %d\n\n//Types\n", i+1)
-		if !*noTypes {
+		w.writeComment("// Decoded gob %d\n\n", i+1)
+		if !*noTypes && g.Types != nil {
+			w.writeComment("//Types\n")
 			err = g.WriteTypes(w)
 			if err != nil {
 				errorf("error writing types: %v\n", err)
 			}
 		}
-		w.writeComment("// Values:")
+		w.writeComment("// Value: ")
 		if *json {
 			err = g.WriteValue(w, degob.JSON)
 		} else {
