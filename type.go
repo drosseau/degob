@@ -1,6 +1,9 @@
 package degob
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 // WireType is basically the same as the `encoding/gob` wiretype with a few
 // fields added and exported. It is also a `Stringer` so the types can be
@@ -72,6 +75,43 @@ const (
 	_reserved6_id typeId = 14
 	_reserved7_id typeId = 15
 )
+
+func (t typeId) String() string {
+	switch t {
+	case _bool_id:
+		return "1 (bool)"
+	case _int_id:
+		return "2 (int)"
+	case _uint_id:
+		return "3 (uint)"
+	case _float_id:
+		return "4 (float)"
+	case _bytes_id:
+		return "5 (bytes)"
+	case _string_id:
+		return "6 (string)"
+	case _complex_id:
+		return "7 (complex)"
+	case _interface_id:
+		return "8 (interface)"
+	case _reserved1_id:
+		return "9 (reserved)"
+	case _reserved2_id:
+		return "10 (reserved)"
+	case _reserved3_id:
+		return "11 (reserved)"
+	case _reserved4_id:
+		return "12 (reserved)"
+	case _reserved5_id:
+		return "13 (reserved)"
+	case _reserved6_id:
+		return "14 (reserved)"
+	case _reserved7_id:
+		return "15 (reserved)"
+	default:
+		return fmt.Sprintf("%d (user defined)", t)
+	}
+}
 
 // Value is a reprsentation of a Go value. You can test for equality and
 // Display them stylized
@@ -356,8 +396,7 @@ func valueFor(id typeId) Value {
 		var v _complex_type
 		return v
 	case _interface_id:
-		var v interfaceValue
-		return v
+		return interfaceValue{value: _nil_value{}}
 	default:
 		panic("unknown id")
 	}
