@@ -20,6 +20,7 @@ var (
 	noComments  = flag.Bool("nc", false, "don't print additional comments")
 	noTypes     = flag.Bool("nt", false, "don't print type information")
 	json        = flag.Bool("json", false, "show value as json")
+	pkgName     = flag.String("pkg", "", "include a package definition in the output with the given name")
 )
 
 func errorf(s string, v ...interface{}) {
@@ -73,8 +74,12 @@ func (w writer) writeComment(s string, v ...interface{}) {
 	if *noComments {
 		return
 	}
+	w.writeStr(s, v...)
+}
+
+func (w writer) writeStr(s string, v ...interface{}) {
 	if w.err != nil {
-		errorf("error writing output: %v\n", w.err)
+		errorf("error writing output: %v\n")
 	}
 	_, w.err = fmt.Fprintf(w.w, s, v...)
 }
@@ -98,6 +103,9 @@ func main() {
 	gobs, err := dec.Decode()
 	if err != nil {
 		errorf("failed to decode gob: %s\n", err)
+	}
+	if *pkgName != "" {
+		w.writeStr("package %s\n\n", *pkgName)
 	}
 	for i, g := range gobs {
 		w.writeComment("// Decoded gob %d\n\n//Types\n", i+1)
