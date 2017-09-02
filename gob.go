@@ -16,7 +16,7 @@ type Gob struct {
 // WriteTypes writes the Gob's types to Writer
 func (g *Gob) WriteTypes(w io.Writer) error {
 	if g.Types == nil {
-		return errors.New("attempted to write nil Types gob's types")
+		return errors.New("gob has no defined types")
 	}
 	for _, t := range g.Types {
 		_, err := fmt.Fprintf(w, "// type ID: %d\n", t.Id())
@@ -34,7 +34,7 @@ func (g *Gob) WriteTypes(w io.Writer) error {
 // WriteValues writes the Gob's values to a writer with a given style
 func (g *Gob) WriteValue(w io.Writer, sty style) error {
 	if g.Value == nil {
-		return errors.New("attempted to write nil Value gob")
+		return errors.New("gob has no value")
 	}
 	_, err := fmt.Fprintf(w, "%s\n", g.Value.Display(sty))
 	return err
