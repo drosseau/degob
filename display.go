@@ -103,7 +103,7 @@ func (v sliceValue) valuesSep(sty style, sep string) string {
 func (v sliceValue) Display(sty style) string {
 	switch sty {
 	case JSON:
-		return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
+		return fmt.Sprintf("[%s]", v.valuesSep(sty, ","))
 	case SingleLine:
 		return fmt.Sprintf("[]%s{%s}", v.elemType, v.valuesSep(SingleLine, ", "))
 	case CommentedSingleLine:
@@ -124,7 +124,7 @@ func (v arrayValue) valuesSep(sty style, sep string) string {
 func (v arrayValue) Display(sty style) string {
 	switch sty {
 	case JSON:
-		return fmt.Sprintf("[%s]", v.valuesSep(sty, ", "))
+		return fmt.Sprintf("[%s]", v.valuesSep(sty, ","))
 	case SingleLine:
 		return fmt.Sprintf("[%d]%s{%s}", v.length, v.elemType, v.valuesSep(SingleLine, ", "))
 	case CommentedSingleLine:
@@ -182,9 +182,9 @@ func (v mapValue) displayJSON() string {
 	s := "{"
 	end := len(v.values)
 	for i, v := range v.values {
-		s += fmt.Sprintf("%s: %s", v.key.Display(JSON), v.elem.Display(JSON))
+		s += fmt.Sprintf("%s:%s", v.key.Display(JSON), v.elem.Display(JSON))
 		if i+1 < end {
-			s += ", "
+			s += ","
 		}
 	}
 	s += "}"
@@ -238,9 +238,9 @@ func (s *structValue) json() string {
 	str := "{"
 	end := len(s.fields)
 	for i, v := range s.fields {
-		str += fmt.Sprintf("\"%s\": %s", v.name, v.value.Display(JSON))
+		str += fmt.Sprintf("\"%s\":%s", v.name, v.value.Display(JSON))
 		if i+1 < end {
-			str += ", "
+			str += ","
 		}
 	}
 	str += "}"
@@ -264,7 +264,7 @@ func (v _float_type) Display(sty style) string {
 func (v _bytes_type) Display(sty style) string {
 	if sty == JSON {
 		s := fmt.Sprintf("%d", v)
-		return strings.Join(strings.Split(s, " "), ", ")
+		return strings.Join(strings.Split(s, " "), ",")
 	}
 	return fmt.Sprintf("%#v", []byte(v))
 }
@@ -273,7 +273,7 @@ func (v _string_type) Display(sty style) string {
 }
 func (v _complex_type) Display(sty style) string {
 	if sty == JSON {
-		return fmt.Sprintf(`{"Re": %f, "Im": %f}`, real(v), imag(v))
+		return fmt.Sprintf(`{"Re":%f,"Im":%f}`, real(v), imag(v))
 	}
 	return fmt.Sprintf("%#v", complex128(v))
 }
