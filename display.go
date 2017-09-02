@@ -281,5 +281,8 @@ func (v interfaceValue) Display(sty style) string {
 	return fmt.Sprintf("%v", v.value.Display(sty))
 }
 func (v _nil_value) Display(sty style) string {
+	if sty == JSON {
+		return "null"
+	}
 	return "nil"
 }
