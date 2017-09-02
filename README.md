@@ -23,6 +23,7 @@ There are a few limitations that I can't really get around.
 - gobs don't include information about the bit size of the type so all types are their largest possible (`int64`, `uint64`, `complex128`, `float64`) so as to be able to accept anything. This means that the representations you get aren't exactly the representations that the source was using with respect to bitsizes.
 - `byte`s are received as `uint64`, but `[]byte` is correct. There is no type id for a single `byte` in the gob format.
 - There is no way to differentiate between a type and a pointer to that type.
+- There is an included `JSON` output format, but, since a gob can be any valid Go type, there are plenty of valid gobs that cannot be accurately represented as JSON. Simple types will not print valid JSON. Bad map types will return an error JSON that contains the `SingleLine` format of the map under `val`.
 
 ## TODO
 
