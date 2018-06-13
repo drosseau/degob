@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/drosseau/degob"
+	"gitlab.com/drosseau/degob"
 )
 
 var (
