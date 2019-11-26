@@ -9,10 +9,25 @@ import (
 // fields added and exported. It is also a `Stringer` so the types can be
 // printed for better viewing.
 type WireType struct {
-	ArrayT  *ArrayType
-	SliceT  *SliceType
-	StructT *StructType
-	MapT    *MapType
+	ArrayT           *ArrayType
+	SliceT           *SliceType
+	StructT          *StructType
+	MapT             *MapType
+	GobEncoderT      *GobEncoderType
+	BinaryMarshalerT *BinaryMarshalerType
+	TextMarshalerT   *TextMarshalerType
+}
+
+type GobEncoderType struct {
+	CommonType
+}
+
+type BinaryMarshalerType struct {
+	CommonType
+}
+
+type TextMarshalerType struct {
+	CommonType
 }
 
 // ArrayType represents a fixed size array
@@ -215,6 +230,19 @@ func (v mapValue) Equal(o Value) bool {
 		}
 	}
 	return true
+}
+
+type opaqueEncodedValue struct {
+	name  string
+	value _bytes_type
+}
+
+func (oev *opaqueEncodedValue) Equal(o Value) bool {
+	other, ok := o.(*opaqueEncodedValue)
+	if !ok {
+		return false
+	}
+	return oev.name == other.name && oev.value.Equal(other.value)
 }
 
 type structField struct {

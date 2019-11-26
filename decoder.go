@@ -353,6 +353,20 @@ func (dec *Decoder) valueForWireType(w *WireType) Value {
 		v.elemType = dec.getName(w.MapT.Elem)
 		//v.values = make(map[Value]Value)
 		return v
+	// These next types ruin everything. The person who designed the type
+	// gets to encode the value however they want.
+	case w.BinaryMarshalerT != nil:
+		v := new(opaqueEncodedValue)
+		v.name = w.BinaryMarshalerT.CommonType.Name
+		return v
+	case w.TextMarshalerT != nil:
+		v := new(opaqueEncodedValue)
+		v.name = w.TextMarshalerT.CommonType.Name
+		return v
+	case w.GobEncoderT != nil:
+		v := new(opaqueEncodedValue)
+		v.name = w.GobEncoderT.CommonType.Name
+		return v
 	default:
 		panic("all nil in wiretype")
 	}
@@ -390,6 +404,12 @@ func (dec *Decoder) readValue(id typeId, v *Value) {
 			dec.readSliceValue(wire, v)
 		case wire.ArrayT != nil:
 			dec.readArrayValue(wire, v)
+		case wire.GobEncoderT != nil:
+			dec.readGobEncoderValue(wire, v)
+		case wire.BinaryMarshalerT != nil:
+			dec.readBinaryMarshalerValue(wire, v)
+		case wire.TextMarshalerT != nil:
+			dec.readTextMarshalerValue(wire, v)
 		}
 	}
 }
@@ -486,6 +506,41 @@ func (dec *Decoder) readNonNilInterface(v *Value, nl int) {
 		}
 	}
 	*v = into
+}
+
+func (dec *Decoder) readGobEncoderValue(wire *WireType, val *Value) {
+	if dec.err != nil {
+		return
+	}
+	into := dec.valueForWireType(wire).(*opaqueEncodedValue)
+	dec.readOpaqueEncodedValue(into, val)
+}
+
+func (dec *Decoder) readBinaryMarshalerValue(wire *WireType, val *Value) {
+	if dec.err != nil {
+		return
+	}
+	into := dec.valueForWireType(wire).(*opaqueEncodedValue)
+	dec.readOpaqueEncodedValue(into, val)
+}
+
+func (dec *Decoder) readTextMarshalerValue(wire *WireType, val *Value) {
+	if dec.err != nil {
+		return
+	}
+	into := dec.valueForWireType(wire).(*opaqueEncodedValue)
+	dec.readOpaqueEncodedValue(into, val)
+}
+
+func (dec *Decoder) readOpaqueEncodedValue(val *opaqueEncodedValue, into *Value) {
+	if dec.err != nil {
+		return
+	}
+	l := dec.nextUint()
+	b := make([]byte, l)
+	dec.gobBuf.Read(b)
+	val.value = _bytes_type(b)
+	*into = val
 }
 
 func (dec *Decoder) readMapValue(wire *WireType, val *Value) {
@@ -595,6 +650,12 @@ func (dec *Decoder) decodeType(id typeId, w *WireType) {
 		dec.decodeStruct(id, w)
 	case 3:
 		dec.decodeMap(id, w)
+	case 4:
+		dec.decodeGobEncoder(id, w)
+	case 5:
+		dec.decodeBinaryMarshaler(id, w)
+	case 6:
+		dec.decodeTextMarshaler(id, w)
 	default:
 		dec.err = errUnknownDelta(dec.bytesProcessed, dec.gobBuf.Bytes())
 		return
@@ -682,6 +743,36 @@ func (dec *Decoder) decodeMap(id typeId, w *WireType) {
 		CommonType: common,
 		Key:        keyId,
 		Elem:       elemId,
+	}
+}
+
+func (dec *Decoder) decodeBinaryMarshaler(id typeId, w *WireType) {
+	if dec.err != nil {
+		return
+	}
+	common := dec.decodeCommon()
+	w.BinaryMarshalerT = &BinaryMarshalerType{
+		CommonType: common,
+	}
+}
+
+func (dec *Decoder) decodeTextMarshaler(id typeId, w *WireType) {
+	if dec.err != nil {
+		return
+	}
+	common := dec.decodeCommon()
+	w.TextMarshalerT = &TextMarshalerType{
+		CommonType: common,
+	}
+}
+
+func (dec *Decoder) decodeGobEncoder(id typeId, w *WireType) {
+	if dec.err != nil {
+		return
+	}
+	common := dec.decodeCommon()
+	w.GobEncoderT = &GobEncoderType{
+		CommonType: common,
 	}
 }
 
@@ -776,6 +867,13 @@ func (dec *Decoder) getName(id typeId) string {
 			return strings.TrimSpace(v.MapT.CommonType.Name)
 		case v.ArrayT != nil:
 			return strings.TrimSpace(v.ArrayT.CommonType.Name)
+		case v.BinaryMarshalerT != nil:
+			return strings.TrimSpace(v.BinaryMarshalerT.CommonType.Name)
+		case v.GobEncoderT != nil:
+			return strings.TrimSpace(v.GobEncoderT.CommonType.Name)
+		case v.TextMarshalerT != nil:
+			return strings.TrimSpace(v.TextMarshalerT.CommonType.Name)
+
 		default:
 			panic("empty wiretype at chosen id")
 		}

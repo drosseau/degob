@@ -92,6 +92,10 @@ func (s *StructType) String() string {
 	return st
 }
 
+func (oev *opaqueEncodedValue) Display(sty style) string {
+	return oev.value.Display(sty)
+}
+
 func (v sliceValue) valuesSep(sty style, sep string) string {
 	var out []string
 	for _, val := range v.values {
